@@ -9,3 +9,8 @@ provider "azurerm" {
   features {}
   subscription_id = var.subscription_id != "" ? var.subscription_id : null
 }
+
+provider "google" {
+  project = var.gcp_project_id
+  region  = var.gcp_region
+}

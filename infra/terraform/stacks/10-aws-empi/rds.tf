@@ -12,7 +12,7 @@ resource "aws_db_subnet_group" "empi" {
 resource "aws_db_instance" "empi" {
   identifier     = "${local.name_prefix}-empi"
   engine         = "postgres"
-  engine_version = "16.4"
+  engine_version = var.rds_engine_version
   instance_class = local.this.rds_instance_class
 
   allocated_storage     = 20

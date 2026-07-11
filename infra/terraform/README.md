@@ -83,9 +83,11 @@ terraform apply
 | 1 | `10-aws-empi` · edge (API GW público+WAF, ALB privado+mTLS, NLB) | ✅ escrito y `validate` OK |
 | 0/1 | CI GitHub Actions (fmt/validate/plan/checkov) | ✅ `.github/workflows/iac.yml` |
 | 2 | `20-azure-integ` (VNet, Functions HL7, APIM egress, mock HCE) | ✅ escrito y `validate` OK |
-| 2 | `40-xcloud-net` (VPN IPSec AWS↔Azure) | ✅ escrito y `validate` OK |
-| 2 | `services/hl7-adapter/` (ADT^A28/A40) | ✅ construido y **verificado** (pytest) |
-| 3 | `30-gcp-analytics` + `40-xcloud-net` (AWS↔GCP) | ⬜ pendiente |
+| 2 | `40-xcloud-net` — tramo AWS↔Azure | ✅ escrito y `validate` OK |
+| 2 | `services/hl7-adapter/` (ADT^A28/A40) | ✅ construido y **verificado** (pytest 3/3) |
+| 3 | `30-gcp-analytics` (VPC, Healthcare API/DICOM, BigQuery 360, Cloud Run, Artifact Registry) | ✅ escrito y `validate` OK |
+| 3 | `40-xcloud-net` — tramo AWS↔GCP (Classic VPN, mismo VGW) | ✅ escrito y `validate` OK |
+| 3 | `services/gcp-consumer/` (re-tag DICOM + refresh patient_360) | ✅ construido y **verificado** (pytest 5/5) |
 | 4 | Golden path B2 + demo reproducible | ⬜ pendiente |
 
 > `terraform validate` corre OK con Terraform 1.9.8. Falta `terraform plan/apply` real

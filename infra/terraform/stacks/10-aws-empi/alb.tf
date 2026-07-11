@@ -107,7 +107,7 @@ resource "aws_vpc_security_group_ingress_rule" "app_from_alb" {
   from_port                    = 8000
   to_port                      = 8000
   ip_protocol                  = "tcp"
-  description                  = "App <- ALB privado"
+  description                  = "App desde ALB privado"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "app_from_vpc" {
@@ -116,7 +116,7 @@ resource "aws_vpc_security_group_ingress_rule" "app_from_vpc" {
   from_port         = 8000
   to_port           = 8000
   ip_protocol       = "tcp"
-  description       = "App <- NLB (targets IP en la VPC)"
+  description       = "App desde NLB (targets IP en la VPC)"
 }
 
 # --- ALB + target group + listener mTLS --------------------------------------

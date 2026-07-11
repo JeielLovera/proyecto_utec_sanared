@@ -64,6 +64,7 @@ resource "aws_security_group" "redis" {
 }
 
 resource "aws_security_group" "opensearch" {
+  count       = var.enable_opensearch ? 1 : 0
   name        = "${local.name_prefix}-opensearch"
   description = "OpenSearch (blocking del matcher)"
   vpc_id      = module.network.vpc_id

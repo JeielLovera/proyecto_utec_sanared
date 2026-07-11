@@ -7,6 +7,7 @@
 #       vía Terraform). El contrato de mensaje está en 07_Scripts_Modelo_Datos/schemas/bus/.
 # =============================================================================
 resource "aws_security_group" "msk" {
+  count       = var.enable_msk ? 1 : 0
   name        = "${local.name_prefix}-msk"
   description = "MSK Serverless (bus de eventos)"
   vpc_id      = module.network.vpc_id
@@ -21,7 +22,7 @@ resource "aws_security_group" "msk" {
 
   # Ingreso desde las otras nubes (rango de la VPN cross-cloud). Se afina en 40-xcloud-net.
   ingress {
-    description = "Kafka SASL/IAM desde consumidores cross-cloud (Azure/GCP vía VPN)"
+    description = "Kafka SASL/IAM desde consumidores cross-cloud (Azure/GCP via VPN)"
     from_port   = 9098
     to_port     = 9098
     protocol    = "tcp"
@@ -39,11 +40,12 @@ resource "aws_security_group" "msk" {
 }
 
 resource "aws_msk_serverless_cluster" "bus" {
+  count        = var.enable_msk ? 1 : 0
   cluster_name = "${local.name_prefix}-bus"
 
   vpc_config {
     subnet_ids         = module.network.private_subnet_ids
-    security_group_ids = [aws_security_group.msk.id]
+    security_group_ids = [aws_security_group.msk[0].id]
   }
 
   client_authentication {
@@ -60,7 +62,8 @@ resource "aws_msk_serverless_cluster" "bus" {
 # El bootstrap server de un cluster serverless se resuelve por ARN
 # (aws kafka get-bootstrap-brokers --cluster-arn ...). La app lo descubre desde SSM.
 resource "aws_ssm_parameter" "bus_cluster_arn" {
+  count = var.enable_msk ? 1 : 0
   name  = "/empi/${var.environment}/bus/cluster_arn"
   type  = "String"
-  value = aws_msk_serverless_cluster.bus.arn
+  value = aws_msk_serverless_cluster.bus[0].arn
 }

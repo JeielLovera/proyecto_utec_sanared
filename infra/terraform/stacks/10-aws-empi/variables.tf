@@ -37,3 +37,34 @@ variable "internal_client_cidrs" {
   type        = list(string)
   default     = ["10.0.0.0/8"]
 }
+
+# --- Perfil de laboratorio (AWS Academy Learner Lab) --------------------------
+variable "create_iam_roles" {
+  description = "Crear roles IAM propios de ECS. En Learner Lab ponlo en false (bloquea iam:CreateRole) y usa lab_role_arn."
+  type        = bool
+  default     = true
+}
+
+variable "lab_role_arn" {
+  description = "ARN de un rol existente (p.ej. LabRole de Learner Lab) para ECS cuando create_iam_roles=false."
+  type        = string
+  default     = ""
+}
+
+variable "enable_opensearch" {
+  description = "Provisiona OpenSearch (blocking de producción). En Learner Lab ponlo en false: el servicio usa pg_trgm."
+  type        = bool
+  default     = true
+}
+
+variable "enable_msk" {
+  description = "Provisiona el bus MSK. En Learner Lab ponlo en false: el servicio usa bus_backend=noop (Flujo A no lo necesita)."
+  type        = bool
+  default     = true
+}
+
+variable "rds_engine_version" {
+  description = "Version del motor PostgreSQL de RDS. Usa el major ('16') para que RDS elija el minor disponible en la region/cuenta."
+  type        = string
+  default     = "16"
+}

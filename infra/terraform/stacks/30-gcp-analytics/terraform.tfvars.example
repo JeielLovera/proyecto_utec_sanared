@@ -1,0 +1,10 @@
+# Copia a terraform.tfvars y ajusta.
+project     = "sanared-empi"
+environment = "demo"
+project_id  = "TU-PROYECTO-GCP"        # gcloud projects list
+region      = "us-central1"
+vpc_cidr    = "10.40.0.0/16"           # no solapar con AWS (10.20/16) ni Azure (10.30/16)
+aws_cidr    = "10.20.0.0/16"
+
+enable_healthcare_api = true
+consumer_image        = ""             # vacío = imagen placeholder hasta el primer build/push

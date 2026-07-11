@@ -4,7 +4,7 @@
 # =============================================================================
 resource "aws_api_gateway_rest_api" "public" {
   name        = "${local.name_prefix}-patient-api"
-  description = "Entrada pública de pacientes al EMPI (portal)."
+  description = "Entrada publica de pacientes al EMPI (portal)."
 
   endpoint_configuration {
     types = ["REGIONAL"]

@@ -29,8 +29,8 @@ resource "aws_ecs_task_definition" "empi" {
   network_mode             = "awsvpc"
   cpu                      = var.environment == "prod" ? "1024" : "512"
   memory                   = var.environment == "prod" ? "2048" : "1024"
-  execution_role_arn       = aws_iam_role.execution.arn
-  task_role_arn            = aws_iam_role.task.arn
+  execution_role_arn       = local.ecs_execution_role_arn
+  task_role_arn            = local.ecs_task_role_arn
 
   container_definitions = jsonencode([{
     name         = local.container_name

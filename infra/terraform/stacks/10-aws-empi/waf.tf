@@ -5,7 +5,7 @@
 # =============================================================================
 resource "aws_wafv2_web_acl" "public" {
   name        = "${local.name_prefix}-waf"
-  description = "WAF de la entrada pública del EMPI"
+  description = "WAF de la entrada publica del EMPI"
   scope       = "REGIONAL"
 
   default_action {

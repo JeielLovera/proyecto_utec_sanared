@@ -42,7 +42,7 @@ output "redis_endpoint" {
 }
 
 output "opensearch_endpoint" {
-  value = aws_opensearch_domain.empi.endpoint
+  value = var.enable_opensearch ? aws_opensearch_domain.empi[0].endpoint : null
 }
 
 output "app_security_group_id" {
@@ -52,7 +52,7 @@ output "app_security_group_id" {
 
 output "bus_cluster_arn" {
   description = "ARN del cluster MSK Serverless (bus de eventos)."
-  value       = aws_msk_serverless_cluster.bus.arn
+  value       = var.enable_msk ? aws_msk_serverless_cluster.bus[0].arn : null
 }
 
 output "ecr_repository_url" {

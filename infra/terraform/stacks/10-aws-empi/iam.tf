@@ -1,4 +1,11 @@
 # Roles de las tareas ECS del servicio EMPI.
+# En AWS Academy Learner Lab (iam:CreateRole bloqueado) usar create_iam_roles=false y
+# lab_role_arn = "arn:aws:iam::<ACCOUNT>:role/LabRole".
+locals {
+  ecs_execution_role_arn = var.create_iam_roles ? aws_iam_role.execution[0].arn : var.lab_role_arn
+  ecs_task_role_arn      = var.create_iam_roles ? aws_iam_role.task[0].arn : var.lab_role_arn
+}
+
 data "aws_iam_policy_document" "ecs_assume" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -11,12 +18,14 @@ data "aws_iam_policy_document" "ecs_assume" {
 
 # --- Execution role: ECS lo usa para arrancar la tarea (pull de ECR, logs, secretos) ---
 resource "aws_iam_role" "execution" {
+  count              = var.create_iam_roles ? 1 : 0
   name               = "${local.name_prefix}-ecs-exec"
   assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
 }
 
 resource "aws_iam_role_policy_attachment" "execution_managed" {
-  role       = aws_iam_role.execution.name
+  count      = var.create_iam_roles ? 1 : 0
+  role       = aws_iam_role.execution[0].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
@@ -40,30 +49,40 @@ data "aws_iam_policy_document" "execution_secrets" {
 }
 
 resource "aws_iam_role_policy" "execution_secrets" {
+  count  = var.create_iam_roles ? 1 : 0
   name   = "secrets-access"
-  role   = aws_iam_role.execution.id
+  role   = aws_iam_role.execution[0].id
   policy = data.aws_iam_policy_document.execution_secrets.json
 }
 
 # --- Task role: identidad del proceso en runtime (bus MSK, lectura SSM en caliente) ---
 resource "aws_iam_role" "task" {
+  count              = var.create_iam_roles ? 1 : 0
   name               = "${local.name_prefix}-ecs-task"
   assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
 }
 
 data "aws_iam_policy_document" "task" {
-  statement {
-    sid = "KafkaConnect"
-    actions = [
-      "kafka-cluster:Connect",
-      "kafka-cluster:DescribeCluster",
-      "kafka-cluster:*Topic*",
-      "kafka-cluster:WriteData",
-      "kafka-cluster:ReadData",
-      "kafka-cluster:AlterGroup",
-      "kafka-cluster:DescribeGroup",
-    ]
-    resources = ["${aws_msk_serverless_cluster.bus.arn}", "${replace(aws_msk_serverless_cluster.bus.arn, ":cluster/", ":topic/")}/*", "${replace(aws_msk_serverless_cluster.bus.arn, ":cluster/", ":group/")}/*"]
+  # Acceso al bus solo si MSK está habilitado.
+  dynamic "statement" {
+    for_each = var.enable_msk ? [1] : []
+    content {
+      sid = "KafkaConnect"
+      actions = [
+        "kafka-cluster:Connect",
+        "kafka-cluster:DescribeCluster",
+        "kafka-cluster:*Topic*",
+        "kafka-cluster:WriteData",
+        "kafka-cluster:ReadData",
+        "kafka-cluster:AlterGroup",
+        "kafka-cluster:DescribeGroup",
+      ]
+      resources = [
+        aws_msk_serverless_cluster.bus[0].arn,
+        "${replace(aws_msk_serverless_cluster.bus[0].arn, ":cluster/", ":topic/")}/*",
+        "${replace(aws_msk_serverless_cluster.bus[0].arn, ":cluster/", ":group/")}/*",
+      ]
+    }
   }
   statement {
     sid       = "ReadSsmRuntime"
@@ -73,7 +92,8 @@ data "aws_iam_policy_document" "task" {
 }
 
 resource "aws_iam_role_policy" "task" {
+  count  = var.create_iam_roles ? 1 : 0
   name   = "empi-runtime"
-  role   = aws_iam_role.task.id
+  role   = aws_iam_role.task[0].id
   policy = data.aws_iam_policy_document.task.json
 }

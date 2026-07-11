@@ -1,6 +1,15 @@
 # Copia a terraform.tfvars y ajusta. NO se versiona (ver .gitignore).
+# Perfil AS-IS completo (cuenta AWS sin restricciones). Si despliegas en AWS Academy
+# Learner Lab u otra cuenta de laboratorio con IAM/OpenSearch restringidos, usa en su
+# lugar terraform.tfvars.lab.example (ver DEPLOYMENT.md §7).
 project     = "sanared-empi"
 environment = "demo"        # demo | prod
 aws_region  = "us-east-1"
 vpc_cidr    = "10.20.0.0/16" # no debe solapar con Azure (10.30.0.0/16) ni GCP (10.40.0.0/16)
 az_count    = 2
+
+# Toggles de perfil (defaults = as-is completo; ver variables.tf para detalle):
+# create_iam_roles   = true
+# enable_opensearch  = true
+# enable_msk         = true
+# rds_engine_version = "16"

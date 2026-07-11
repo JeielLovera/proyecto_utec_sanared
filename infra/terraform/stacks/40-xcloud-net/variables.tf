@@ -41,3 +41,27 @@ variable "azure_vnet_cidr" {
   type        = string
   default     = "10.30.0.0/16"
 }
+
+variable "gcp_project_id" {
+  description = "ID del proyecto GCP (mismo que 30-gcp-analytics)."
+  type        = string
+  default     = ""
+}
+
+variable "gcp_region" {
+  type    = string
+  default = "us-central1"
+}
+
+variable "gcp_vpc_cidr" {
+  description = "CIDR de la VPC GCP (para la ruta AWS->GCP)."
+  type        = string
+  default     = "10.40.0.0/16"
+}
+
+variable "shared_key_gcp" {
+  description = "Pre-shared key IPSec para el túnel AWS<->GCP."
+  type        = string
+  default     = "SanaRedEmpiXcloudGcp2026Psk"
+  sensitive   = true
+}

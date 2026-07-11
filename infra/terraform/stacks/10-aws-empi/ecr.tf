@@ -21,7 +21,7 @@ resource "aws_ecr_lifecycle_policy" "empi" {
   policy = jsonencode({
     rules = [{
       rulePriority = 1
-      description  = "Mantener 10 imágenes"
+      description  = "Mantener 10 imagenes"
       selection    = { tagStatus = "any", countType = "imageCountMoreThan", countNumber = 10 }
       action       = { type = "expire" }
     }]

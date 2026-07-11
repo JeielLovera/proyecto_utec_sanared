@@ -10,7 +10,7 @@ resource "aws_elasticache_subnet_group" "empi" {
 
 resource "aws_elasticache_replication_group" "empi" {
   replication_group_id = "${local.name_prefix}-redis"
-  description          = "EMPI cache: lookup DNI/ID + anti-recalculo (§4.2)"
+  description          = "EMPI cache: lookup DNI/ID + anti-recalculo (sec 4.2)"
 
   engine         = "redis"
   engine_version = "7.1"

@@ -16,3 +16,12 @@ data "terraform_remote_state" "azure" {
     region = var.state_region
   }
 }
+
+data "terraform_remote_state" "gcp" {
+  backend = "s3"
+  config = {
+    bucket = var.state_bucket
+    key    = "stacks/30-gcp-analytics/terraform.tfstate"
+    region = var.state_region
+  }
+}

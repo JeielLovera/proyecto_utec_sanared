@@ -10,3 +10,11 @@ output "aws_vpn_tunnel1_status" {
   description = "Estado del túnel (UP tras el handshake IPSec)."
   value       = aws_vpn_connection.to_azure.tunnel1_vgw_inside_address
 }
+
+output "gcp_vpn_static_ip" {
+  value = google_compute_address.vpn.address
+}
+
+output "aws_vpn_gcp_tunnel1_address" {
+  value = aws_vpn_connection.to_gcp.tunnel1_address
+}

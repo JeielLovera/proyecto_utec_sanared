@@ -1,0 +1,16 @@
+# Perfil AWS Academy LEARNER LAB — copia a terraform.tfvars
+# Adecuación por las restricciones del lab (IAM bloqueado, OpenSearch/MSK restringidos).
+project     = "sanared-empi"
+environment = "demo"
+aws_region  = "us-east-1"
+vpc_cidr    = "10.20.0.0/16"
+az_count    = 2
+
+# --- Ajustes de laboratorio ---
+create_iam_roles = false                                          # Learner Lab bloquea iam:CreateRole
+lab_role_arn     = "arn:aws:iam::058264449307:role/LabRole"       # <-- tu ACCOUNT_ID
+enable_opensearch = false                                         # el servicio usa pg_trgm
+enable_msk        = false                                         # el servicio usa bus_backend=noop
+rds_engine_version = "16"                                         # RDS elige el minor disponible
+
+# Con esto el stack despliega barato y corre Flujo A end-to-end (sin OpenSearch/MSK/VPN).

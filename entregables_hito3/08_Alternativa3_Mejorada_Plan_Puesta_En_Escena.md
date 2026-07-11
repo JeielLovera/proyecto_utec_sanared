@@ -190,8 +190,10 @@ Validado con `terraform validate` (Terraform 1.9.8). **Aún sin `apply`** (requi
 | 0/1 | CI GitHub Actions (fmt/validate/plan/checkov) | ✅ `.github/workflows/iac.yml` |
 | **Capa 2** | adaptador HL7 (`services/hl7-adapter/`: `ADT^A28`/`ADT^A40`+`MRG`) | ✅ construido · **verificado** (pytest 3/3) |
 | 2 | `20-azure-integ` (VNet, Functions, APIM egress, mock HCE) | ✅ escrito · `validate` OK |
-| 2 | `40-xcloud-net` (VPN IPSec AWS↔Azure) | ✅ escrito · `validate` OK |
-| 3 | `30-gcp-analytics` + `40-xcloud-net` (AWS↔GCP) | ⬜ pendiente |
+| 2 | `40-xcloud-net` — tramo AWS↔Azure | ✅ escrito · `validate` OK |
+| **Capa 2** | consumidor GCP (`services/gcp-consumer/`: re-tag DICOM + refresh `patient_360`) | ✅ construido · **verificado** (pytest 5/5) |
+| 3 | `30-gcp-analytics` (VPC, Healthcare API/DICOM, BigQuery 360, Cloud Run, Artifact Registry) | ✅ escrito · `validate` OK |
+| 3 | `40-xcloud-net` — tramo AWS↔GCP (Classic VPN, mismo VGW) | ✅ escrito · `validate` OK |
 | 4 | Golden path B2 + demo reproducible | ⬜ pendiente |
 
 **Fidelidad al modelo (ya en el IaC):** cifrado KMS en todo el plano de datos (RNF-03 / Ley 29733); RDS/Redis/OpenSearch/MSK en **subredes privadas**; umbrales `0.95/0.85` en SSM (configurables en caliente, RNF-06.2); *security groups* least-privilege (solo la app alcanza los datos) con hueco `9098` para consumidores cross-cloud (Azure/GCP).

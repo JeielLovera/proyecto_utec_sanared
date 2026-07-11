@@ -59,7 +59,8 @@ resource "aws_ssm_parameter" "redis_endpoint" {
 }
 
 resource "aws_ssm_parameter" "opensearch_endpoint" {
+  count = var.enable_opensearch ? 1 : 0
   name  = "/empi/${var.environment}/opensearch/endpoint"
   type  = "String"
-  value = aws_opensearch_domain.empi.endpoint
+  value = aws_opensearch_domain.empi[0].endpoint
 }

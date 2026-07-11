@@ -9,5 +9,9 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 3.116"
     }
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.40"
+    }
   }
 }

@@ -5,6 +5,7 @@
 # Dominio dentro de la VPC (subredes privadas); cifrado en reposo (CMK) y node-to-node.
 # =============================================================================
 resource "aws_opensearch_domain" "empi" {
+  count          = var.enable_opensearch ? 1 : 0
   domain_name    = "${var.project}-${var.environment}-idx"
   engine_version = "OpenSearch_2.13"
 
@@ -30,7 +31,7 @@ resource "aws_opensearch_domain" "empi" {
   vpc_options {
     # 1 subred en demo (single-AZ); 2 en prod (zone awareness).
     subnet_ids         = slice(module.network.private_subnet_ids, 0, local.this.opensearch_instances)
-    security_group_ids = [aws_security_group.opensearch.id]
+    security_group_ids = [aws_security_group.opensearch[0].id]
   }
 
   encrypt_at_rest {
@@ -56,6 +57,7 @@ resource "aws_opensearch_domain" "empi" {
       Action    = "es:*"
       Resource  = "arn:aws:es:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:domain/${var.project}-${var.environment}-idx/*"
     }]
+    # (política mínima; en Learner Lab OpenSearch se desactiva con enable_opensearch=false)
   })
 
   tags = { Name = "${local.name_prefix}-idx" }
