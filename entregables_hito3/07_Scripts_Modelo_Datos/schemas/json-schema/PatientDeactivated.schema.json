@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sanared.pe/empi/schemas/PatientDeactivated.schema.json",
+  "title": "PatientDeactivated.payload",
+  "description": "Desactivación de una identidad (deceso; fuera de MVP, previsto para Fase 2) (§2.2, RF-06, §9).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["empi_id", "reason", "decided_by"],
+  "properties": {
+    "empi_id": { "type": "string", "pattern": "^EMPI-[0-9]{8}-[0-9A-F]{8}$" },
+    "reason": {
+      "type": "string",
+      "enum": ["DECESO", "SOLICITUD_TITULAR", "DUPLICADO_ADMIN"],
+      "description": "Motivo -> mapea a record_status INACTIVO_DECESO u otro (§9)."
+    },
+    "decided_by": {
+      "type": "string",
+      "pattern": "^OPERADOR:[A-Za-z0-9_-]+$"
+    },
+    "effective_date": { "type": "string", "format": "date" },
+    "note": { "type": "string" }
+  }
+}

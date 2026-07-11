@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sanared.pe/empi/schemas/event-envelope.schema.json",
+  "title": "PatientEvent (envelope)",
+  "description": "Sobre del evento persistido en patient_events (§2.1). El payload es polimórfico según event_type; su forma la validan los schemas por evento (json-schema/<EventType>.schema.json).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id", "empi_id", "event_type", "event_version", "version",
+    "payload", "actor", "source_system", "correlation_id", "occurred_at"
+  ],
+  "properties": {
+    "event_id": {
+      "description": "PK. UUID v7 (ordenable por tiempo).",
+      "type": "string", "format": "uuid"
+    },
+    "empi_id": {
+      "description": "Identidad afectada. Formato EMPI-YYYYMMDD-XXXXXXXX.",
+      "type": "string", "pattern": "^EMPI-[0-9]{8}-[0-9A-F]{8}$"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "PatientRegistered", "IdentifierLinked", "ContactUpdated",
+        "PatientMatchPending", "PatientMerged", "MergeReverted",
+        "PatientDeactivated", "PatientAccessed"
+      ]
+    },
+    "event_version": {
+      "description": "Versión del ESQUEMA del payload (evolución de contrato).",
+      "type": "integer", "minimum": 1, "default": 1
+    },
+    "version": {
+      "description": "Nº de secuencia del agregado (concurrencia optimista, UNIQUE(empi_id,version)).",
+      "type": "integer", "minimum": 0
+    },
+    "payload": {
+      "description": "Datos del evento (FHIR-compatible). Validado por el schema del event_type.",
+      "type": "object"
+    },
+    "actor": {
+      "description": "Quién originó (rol:id). Ej: ADMISIONISTA:u123, SISTEMA:portal.",
+      "type": "string", "maxLength": 64
+    },
+    "source_system": {
+      "type": "string",
+      "enum": ["RENIEC", "HCE", "LIS", "PORTAL", "PACS", "ERP", "AGENDA"]
+    },
+    "correlation_id": {
+      "description": "Correlaciona el request HTTP y todos los sistemas destino (trazabilidad end-to-end).",
+      "type": "string", "format": "uuid"
+    },
+    "causation_id": {
+      "description": "event_id del evento que causó este (linaje causal). Nullable.",
+      "type": ["string", "null"], "format": "uuid"
+    },
+    "occurred_at": {
+      "description": "Momento del hecho de negocio.",
+      "type": "string", "format": "date-time"
+    },
+    "recorded_at": {
+      "description": "Momento de persistencia (default now()).",
+      "type": "string", "format": "date-time"
+    }
+  },
+  "allOf": [
+    { "if": { "properties": { "event_type": { "const": "PatientRegistered" } } },
+      "then": { "properties": { "payload": { "$ref": "PatientRegistered.schema.json" } } } },
+    { "if": { "properties": { "event_type": { "const": "IdentifierLinked" } } },
+      "then": { "properties": { "payload": { "$ref": "IdentifierLinked.schema.json" } } } },
+    { "if": { "properties": { "event_type": { "const": "ContactUpdated" } } },
+      "then": { "properties": { "payload": { "$ref": "ContactUpdated.schema.json" } } } },
+    { "if": { "properties": { "event_type": { "const": "PatientMatchPending" } } },
+      "then": { "properties": { "payload": { "$ref": "PatientMatchPending.schema.json" } } } },
+    { "if": { "properties": { "event_type": { "const": "PatientMerged" } } },
+      "then": { "properties": { "payload": { "$ref": "PatientMerged.schema.json" } } } },
+    { "if": { "properties": { "event_type": { "const": "MergeReverted" } } },
+      "then": { "properties": { "payload": { "$ref": "MergeReverted.schema.json" } } } },
+    { "if": { "properties": { "event_type": { "const": "PatientDeactivated" } } },
+      "then": { "properties": { "payload": { "$ref": "PatientDeactivated.schema.json" } } } },
+    { "if": { "properties": { "event_type": { "const": "PatientAccessed" } } },
+      "then": { "properties": { "payload": { "$ref": "PatientAccessed.schema.json" } } } }
+  ]
+}

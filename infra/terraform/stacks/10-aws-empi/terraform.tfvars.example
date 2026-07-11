@@ -1,0 +1,6 @@
+# Copia a terraform.tfvars y ajusta. NO se versiona (ver .gitignore).
+project     = "sanared-empi"
+environment = "demo"        # demo | prod
+aws_region  = "us-east-1"
+vpc_cidr    = "10.20.0.0/16" # no debe solapar con Azure (10.30.0.0/16) ni GCP (10.40.0.0/16)
+az_count    = 2

@@ -1,0 +1,53 @@
+{
+  "type": "record",
+  "name": "IdentityPatientEvent",
+  "namespace": "pe.sanared.empi.identity",
+  "doc": "Envelope cross-cloud de los topics identity.patient.* (§6). Subconjunto del evento del Event Store (minimización §10). Registrar como subject identity.patient-value en Confluent Schema Registry.",
+  "fields": [
+    { "name": "event_id",       "type": { "type": "string", "logicalType": "uuid" },
+      "doc": "Mismo event_id del Event Store (idempotencia del consumidor)." },
+    { "name": "event_type",
+      "type": {
+        "type": "enum",
+        "name": "PatientEventType",
+        "symbols": ["PatientRegistered", "IdentifierLinked", "ContactUpdated",
+                    "PatientMerged", "MergeReverted", "PatientDeactivated"]
+      },
+      "doc": "Solo eventos que cruzan; los internos (PatientMatchPending/PatientAccessed) no se publican." },
+    { "name": "empi_id",        "type": "string",
+      "doc": "EMPI-YYYYMMDD-XXXXXXXX. En merge/revert es el survivor." },
+    { "name": "correlation_id", "type": { "type": "string", "logicalType": "uuid" } },
+    { "name": "occurred_at",    "type": { "type": "long", "logicalType": "timestamp-millis" } },
+    { "name": "revert",         "type": ["null", "boolean"], "default": null,
+      "doc": "true en MergeReverted publicado sobre identity.patient.merged." },
+    { "name": "data",
+      "type": {
+        "type": "record",
+        "name": "IdentityPatientData",
+        "doc": "Subconjunto minimo por tipo de evento; cada consumidor pide a la fuente el resto (§6).",
+        "fields": [
+          { "name": "survivor_empi_id", "type": ["null", "string"], "default": null },
+          { "name": "merged_empi_id",   "type": ["null", "string"], "default": null },
+          { "name": "identifiers",
+            "type": {
+              "type": "array",
+              "items": {
+                "type": "record",
+                "name": "Identifier",
+                "fields": [
+                  { "name": "system", "type": "string", "doc": "URI FHIR: urn:pe:reniec:dni, urn:sanared:hce, ..." },
+                  { "name": "type",   "type": "string" },
+                  { "name": "value",  "type": "string" }
+                ]
+              }
+            },
+            "default": [] },
+          { "name": "retired_identifiers",
+            "type": { "type": "array", "items": "Identifier" },
+            "default": [],
+            "doc": "Par retired<->survivor que el adaptador Azure convierte en MRG del ADT^A40 (§8)." }
+        ]
+      }
+    }
+  ]
+}

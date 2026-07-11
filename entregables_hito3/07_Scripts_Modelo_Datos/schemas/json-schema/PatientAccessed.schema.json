@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sanared.pe/empi/schemas/PatientAccessed.schema.json",
+  "title": "PatientAccessed.payload",
+  "description": "Registro de acceso a una identidad (Flujo B1, opcional) (§2.2, RNF-03). Evento INTERNO: no cruza al bus. Alimenta la trazabilidad de accesos.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["empi_id", "accessed_by", "purpose"],
+  "properties": {
+    "empi_id": { "type": "string", "pattern": "^EMPI-[0-9]{8}-[0-9A-F]{8}$" },
+    "accessed_by": {
+      "type": "string",
+      "description": "Rol:id de quien consultó. Ej: MEDICO:u789.",
+      "maxLength": 64
+    },
+    "purpose": {
+      "type": "string",
+      "enum": ["ADMISSION", "CLINICAL_VIEW", "BILLING", "SUPPORT", "GOVERNANCE"]
+    },
+    "channel": {
+      "type": "string",
+      "enum": ["HCE", "PORTAL", "LIS", "PACS", "ERP", "AGENDA", "ADMIN"]
+    },
+    "result": { "type": "string", "enum": ["HIT", "MISS"] }
+  }
+}

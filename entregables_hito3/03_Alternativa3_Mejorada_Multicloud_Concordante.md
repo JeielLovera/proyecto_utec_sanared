@@ -24,10 +24,10 @@ Mapeo del parque AS-IS de SanaRed a dominios de negocio y su nube:
 
 | Nube | Dominio de negocio que ya aloja (AS-IS) | Componentes EMPI asignados (por concordancia) |
 |---|---|---|
-| **AWS** | **Paciente / experiencia digital** — Portal de Pacientes + Amazon RDS | **Núcleo de identidad**: PatientAggregate, Event Store, Golden Record (lectura), matcher en tiempo real + **índice OpenSearch/Elasticsearch (blocking a escala)**, cache de identidad, API Gateway externo (WAF) |
-| **Azure** | **Clínico-diagnóstico + cobros** — LIS (Azure SQL MI) + Portal de Pagos | **Integración clínica y financiera**: APIM mTLS (interno), adaptadores LIS/HCE/ERP/Pagos, enrutamiento de eventos clínicos |
+| **AWS** | **Paciente / experiencia digital** — Portal de Pacientes + Amazon RDS | **Núcleo de identidad**: PatientAggregate, Event Store, Golden Record (lectura), matcher en tiempo real + **índice OpenSearch/Elasticsearch (blocking a escala)**, cache de identidad; **doble perímetro de entrada**: API Gateway + WAF (canal **paciente**, público) y **API GW privado/ALB con mTLS** (entrada de **sistemas internos**: admisión on-prem, agenda) |
+| **Azure** | **Clínico-diagnóstico + cobros** — LIS (Azure SQL MI) + Portal de Pagos | **Integración clínica y financiera**: APIM mTLS como **perímetro de SALIDA** del EMPI hacia legados, adaptadores LIS/HCE/ERP/Pagos, enrutamiento de eventos clínicos |
 | **GCP** | **Imágenes + analítica + salud ocupacional** — PACS réplica + App Salud Ocupacional | **Imágenes y analítica**: FHIR+DICOM Store (vincula PACS al EMPI-ID), vista 360° y batch matching (BigQuery), salud ocupacional |
-| **On-premises (Lima)** | **Historia clínica** — HCE Oracle + PACS local + Admisión | HCE **sin cambios**; adaptador HL7v2↔FHIR gobernado desde Azure |
+| **On-premises (Lima)** | **Historia clínica** — HCE Oracle + PACS local + Admisión | HCE **sin cambios**; adaptador HL7v2↔FHIR gobernado desde Azure (salida). El **Módulo de Admisión (por sede)** consulta el EMPI **en AWS** por **mTLS sobre Direct Connect/VPN** (entrada, **no** por Azure) |
 | **Nube privada** | **Facturación** — ERP | Consumidor de eventos `patient.merged` vía adaptador financiero (Azure) |
 
 **Por qué esto resuelve tu observación:** en la Alt. 3 original, la identidad del *paciente* quedaba en Azure —que en SanaRed es la nube de *diagnóstico y cobros*—. Con la concordancia, la identidad del paciente queda en **AWS**, que es la nube del *paciente*. Además, el Event Store en **RDS PostgreSQL** reutiliza la base que el Portal ya opera en AWS: **más concordante y más simple**.
@@ -43,8 +43,9 @@ Cada componente resulta de **dos decisiones separadas**: el **QUÉ** (qué tecno
 | **Batch de deduplicación** | Splink — *complejidad + portabilidad (backend-swappable)* | **GCP / BigQuery** — *concordancia (analítica)* | **Mixto**: QUÉ=complejidad · DÓNDE=concordancia |
 | **Vista 360°** | BigQuery — *analítica materializada* | **GCP** — *concordancia (analítica)* | Concordancia |
 | **Imágenes (PACS↔EMPI)** | Cloud Healthcare API (FHIR+DICOM) — *nativo de salud* | **GCP** — *concordancia (imágenes)* | Concordancia |
-| **Integración clínica y financiera** | Adaptadores + APIM mTLS | **Azure** — *concordancia (LIS + Portal de Pagos)* | Concordancia |
-| **Perímetro externo** | API Gateway + WAF | **AWS** — *concordancia (canales de paciente)* | Concordancia |
+| **Integración clínica y financiera (salida)** | Adaptadores + APIM mTLS (perímetro de **salida** a legados) | **Azure** — *concordancia (LIS + Portal de Pagos)* | Concordancia |
+| **Perímetro de entrada — paciente (público)** | API Gateway + WAF | **AWS** — *concordancia (canal de paciente)* | Concordancia |
+| **Perímetro de entrada — sistemas internos** | API GW privado / ALB + mTLS (Direct Connect/VPN) | **AWS** — *entrada al core sin salto cross-cloud (RNF-01)* | Dirección de tráfico (ver ADR-A3M-003) |
 | **Bus de eventos** | Kafka neutral (Confluent/Redpanda) — *anti-lock-in* | **Transversal** (junto al productor solo por latencia) | **Neutralidad** — concordancia NO aplica |
 
 ---
@@ -89,7 +90,8 @@ graph TB
 ```mermaid
 graph TB
     subgraph AWS["☁️ AWS — Dominio del PACIENTE (concuerda con Portal de Pacientes)"]
-        APIGW["API Gateway + WAF\n(canales externos de paciente)"]
+        APIGW["API Gateway + WAF\n(canal paciente · público)"]
+        APIMTLS["API GW privado / ALB\n(mTLS interno · sistemas internos)"]
         CORE["EMPI Core / PatientAggregate\n(FastAPI · ECS Fargate)\nCommands + Matcher tiempo real"]
         SEARCH["Amazon OpenSearch / Elasticsearch\n(índice de matching · blocking a escala)"]
         REDIS["ElastiCache Redis\n(cache de identidad · lookup DNI)"]
@@ -97,7 +99,7 @@ graph TB
     end
 
     subgraph AZURE["☁️ Azure — Integración CLÍNICA y FINANCIERA (concuerda con LIS + Pagos)"]
-        APIM["APIM (mTLS interno)"]
+        APIM["APIM (mTLS)\nsalida a legados"]
         ADCLI["Adaptadores Clínicos\n(HCE HL7v2↔FHIR · LIS)\nAzure Functions"]
         ADFIN["Adaptador Financiero\n(ERP · Portal de Pagos)\nAzure Functions"]
     end
@@ -112,11 +114,15 @@ graph TB
     end
 
     subgraph ONPREM["🏥 On-premises Lima"]
+        ADMIS["Módulo de Admisión\n(por sede · opera sobre HCE)"]
         HCE["HCE Oracle (sin cambios)"]
         PACSL["PACS local por sede"]
     end
 
     APIGW --> CORE
+    ADMIS -->|"mTLS · Direct Connect/VPN"| APIMTLS
+    APIMTLS --> CORE
+    ADMIS -.->|"opera sobre HCE"| HCE
     CORE --> REDIS
     CORE --> SEARCH
     CORE --> ES
@@ -149,13 +155,14 @@ workspace "EMPI SanaRed — Alt. 3 Mejorada (Multicloud Concordante)" {
 
     empi = softwareSystem "EMPI — Identidad Unificada" {
       // AWS — dominio del paciente
-      apiGw     = container "API Gateway + WAF"        "Perímetro externo canales paciente" "AWS API Gateway"
+      apiGw     = container "API Gateway + WAF"        "Perímetro público canal paciente"   "AWS API Gateway"
+      apiGwInt  = container "API GW privado / ALB"     "Perímetro interno mTLS (admisión, agenda)" "AWS ALB"
       core      = container "EMPI Core / PatientAggregate" "Identidad, matching RT, commands" "FastAPI / ECS Fargate"
       searchIdx = container "Índice de Matching"       "Blocking fuzzy a escala"            "Amazon OpenSearch / Elasticsearch"
       cache     = container "Cache de Identidad"       "Lookup DNI < 50 ms"                 "ElastiCache Redis"
       eventStore= container "Event Store + Golden Record" "Eventos append-only + proyección"  "Amazon RDS PostgreSQL"
       // Azure — integración clínica y financiera
-      apim      = container "APIM (mTLS interno)"      "Perímetro sistemas internos"        "Azure API Management"
+      apim      = container "APIM (mTLS)"              "Perímetro de SALIDA a legados"      "Azure API Management"
       adClinico = container "Adaptadores Clínicos"     "HCE HL7v2->FHIR, LIS"               "Azure Functions"
       adFinanc  = container "Adaptador Financiero"     "ERP, Portal de Pagos"               "Azure Functions"
       // GCP — imágenes y analítica
@@ -166,6 +173,7 @@ workspace "EMPI SanaRed — Alt. 3 Mejorada (Multicloud Concordante)" {
     }
 
     hce   = softwareSystem "HCE Oracle" "Historia clínica (on-prem)"
+    admisionMod = softwareSystem "Módulo de Admisión (on-prem)" "Registro por sede; opera sobre HCE"
     portal= softwareSystem "Portal de Pacientes" "AWS/RDS"
     agenda= softwareSystem "Agenda SaaS"
     lis   = softwareSystem "LIS" "Azure SQL MI"
@@ -173,10 +181,13 @@ workspace "EMPI SanaRed — Alt. 3 Mejorada (Multicloud Concordante)" {
     erp   = softwareSystem "ERP Facturación" "Nube privada"
 
     paciente  -> portal "Se registra / consulta"
-    admision  -> apiGw  "Admite pacientes"
+    admision  -> admisionMod "Admite en ventanilla"
+    admisionMod -> apiGwInt "Consulta/crea identidad (mTLS · Direct Connect/VPN)"
+    admisionMod -> hce "Opera sobre HCE"
     portal    -> apiGw  "Valida/crea identidad (FHIR $match)"
-    agenda    -> apiGw  "Valida identidad"
-    apiGw     -> core   "Enruta"
+    agenda    -> apiGwInt "Valida identidad (mTLS)"
+    apiGw     -> core   "Enruta (paciente)"
+    apiGwInt  -> core   "Enruta (interno)"
     core      -> cache  "Lookup DNI"
     core      -> searchIdx "Blocking de candidatos"
     core      -> eventStore "Append eventos + proyecta"
@@ -340,7 +351,7 @@ La misma arquitectura concordante se entrega en **dos perfiles**. El perfil demo
 |---|---|---|---|
 | **ADR-A3M-001** | **Concordancia de dominio** como principio de asignación de componentes a nubes | Evita que funcionalidad de paciente caiga en una nube de facturación; co-loca por afinidad de negocio | Reparto por preferencia técnica; nube única |
 | **ADR-A3M-002** | Núcleo de identidad + Event Store en **AWS RDS PostgreSQL** | El dominio del paciente ya vive en AWS (Portal + RDS); reutiliza base existente y reduce complejidad | Cosmos DB (Azure) — concuerda con diagnóstico/pagos, no con paciente; DynamoDB |
-| **ADR-A3M-003** | Perímetro **dual**: AWS API GW+WAF (canales de paciente) / Azure APIM mTLS (sistemas internos) | Tráfico externo necesita WAF; interno necesita autenticación de máquina | Solo un gateway |
+| **ADR-A3M-003** | **Perímetro por dirección de tráfico:** (a) canal **público de paciente** → AWS API GW **+ WAF**; (b) **entrada de sistemas internos** (Módulo de Admisión on-prem, Agenda) → **API GW privado / ALB con mTLS en AWS**, alcanzado por **Direct Connect/VPN** (sin WAF y **sin pasar por Azure**); (c) **salida** del EMPI hacia legados (HCE/LIS/ERP) → **Azure APIM mTLS** | El tráfico web público necesita WAF; los sistemas internos necesitan mTLS y deben llegar al **core (AWS)** sin salto cross-cloud (RNF-01); la propagación a legados se gobierna desde Azure por concordancia clínica | **Enrutar la entrada de admisión por Azure APIM** (añade un salto cross-cloud en el *hot path* y viola RNF-01); un solo gateway |
 | **ADR-A3M-004** | Plano de **integración clínica y financiera en Azure** | Concuerda con LIS (Azure SQL) y Portal de Pagos (Azure) ya existentes | Integración en AWS (rompe concordancia clínica) |
 | **ADR-A3M-005** | **Imágenes y analítica en GCP** (Cloud Healthcare API + BigQuery) | Concuerda con PACS réplica y Salud Ocupacional ya en GCP; FHIR/DICOM nativos | Synapse+Databricks en Azure (rompe concordancia de imágenes) |
 | **ADR-A3M-006** | **El PACS depende del EMPI-ID** para consolidación inter-sede (complemento Fase 2) | Sin identificador común, las imágenes siguen fragmentadas por sede | Mantener PACS con IDs locales |

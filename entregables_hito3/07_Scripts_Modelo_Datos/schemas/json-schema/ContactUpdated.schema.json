@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sanared.pe/empi/schemas/ContactUpdated.schema.json",
+  "title": "ContactUpdated.payload",
+  "description": "Actualización de un punto de contacto (correo/celular) (§2.2, RF-05).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["empi_id", "contact", "source_system"],
+  "properties": {
+    "empi_id": { "type": "string", "pattern": "^EMPI-[0-9]{8}-[0-9A-F]{8}$" },
+    "contact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system", "value"],
+      "properties": {
+        "system":   { "type": "string", "enum": ["PHONE", "EMAIL"] },
+        "value":    { "type": "string", "minLength": 1, "maxLength": 160 },
+        "use":      { "type": "string", "enum": ["mobile", "home", "work"] },
+        "verified": { "type": "boolean" }
+      }
+    },
+    "previous_value": {
+      "type": ["string", "null"],
+      "description": "Valor anterior (para trazabilidad; el histórico se conserva en patient_contact)."
+    },
+    "source_system": {
+      "type": "string",
+      "enum": ["RENIEC", "HCE", "LIS", "PORTAL", "PACS", "ERP", "AGENDA"]
+    }
+  }
+}

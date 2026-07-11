@@ -1,0 +1,8 @@
+# Copia a terraform.tfvars y ajusta.
+project         = "sanared-empi"
+environment     = "demo"
+subscription_id = "" # o export ARM_SUBSCRIPTION_ID / az login
+location        = "eastus2"
+vnet_cidr       = "10.30.0.0/16" # no solapar con AWS (10.20/16) ni GCP (10.40/16)
+enable_apim     = true           # false para pruebas rápidas (APIM tarda ~30-45 min)
+kafka_bootstrap = ""             # se llena tras 10-aws-empi + 40-xcloud-net

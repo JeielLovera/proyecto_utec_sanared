@@ -22,14 +22,15 @@ workspace "EMPI SanaRed - Alt. 3 Mejorada (resumido)" "Vista resumida C4 (Contex
         empi = softwareSystem "EMPI - Identidad Unificada" "EMPI-ID canonico, deduplicacion y vista 360." {
 
             group "AWS - Dominio del Paciente" {
-                apiGwExt   = container "API Gateway + WAF" "Perimetro externo" "AWS API Gateway" "AWS"
+                apiGwExt   = container "API Gateway + WAF" "Perimetro publico (paciente)" "AWS API Gateway" "AWS"
+                apiGwInt   = container "API GW privado / ALB (mTLS)" "Perimetro interno (admision, agenda)" "AWS ALB" "AWS"
                 core       = container "EMPI Core / PatientAggregate" "Identidad + matching tiempo real" "FastAPI / ECS Fargate" "AWS"
                 searchIdx  = container "Indice de Matching" "Blocking a escala" "OpenSearch / Elasticsearch" "AWS"
                 cache      = container "Cache de Identidad" "Lookup DNI" "ElastiCache Redis" "AWS"
                 eventStore = container "Event Store + Golden Record" "Eventos append-only + proyeccion" "Amazon RDS PostgreSQL" "AWS"
             }
             group "Azure - Integracion Clinica y Financiera" {
-                apim      = container "APIM (mTLS interno)" "Perimetro interno" "Azure API Management" "Azure"
+                apim      = container "APIM (mTLS)" "Salida del EMPI hacia legados" "Azure API Management" "Azure"
                 adClinico = container "Adaptadores Clinicos" "HCE HL7v2-FHIR, LIS" "Azure Functions" "Azure"
                 adFinanc  = container "Adaptador Financiero" "ERP, Pagos" "Azure Functions" "Azure"
             }
@@ -44,14 +45,15 @@ workspace "EMPI SanaRed - Alt. 3 Mejorada (resumido)" "Vista resumida C4 (Contex
 
         // Relaciones
         paciente  -> portal "Se registra / consulta"
-        admision  -> empi.apiGwExt "Admite"
+        admision  -> empi.apiGwInt "Admite (modulo on-prem, mTLS)"
         medico    -> empi.analytics "Vista 360 / imagenes"
         opDatos   -> empi.core "Revisa fusiones"
 
         portal -> empi.apiGwExt "match FHIR"
-        agenda -> empi.apiGwExt "Valida identidad"
+        agenda -> empi.apiGwInt "Valida identidad (mTLS)"
 
-        empi.apiGwExt   -> empi.core "Enruta"
+        empi.apiGwExt   -> empi.core "Enruta (paciente)"
+        empi.apiGwInt   -> empi.core "Enruta (interno)"
         empi.core       -> empi.cache "Lookup"
         empi.core       -> empi.searchIdx "Blocking"
         empi.core       -> empi.eventStore "Append + proyecta"

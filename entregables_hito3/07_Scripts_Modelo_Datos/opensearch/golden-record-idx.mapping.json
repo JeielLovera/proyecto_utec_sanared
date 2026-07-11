@@ -1,0 +1,46 @@
+{
+  "_meta": {
+    "description": "Índice de blocking del EMPI (Paso 2, producción) — 1 documento por Golden Record ACTIVO. Ref §4.1, ADR-A3M-011. En DEMO se sustituye por pg_trgm (ver sql/04_indexes.sql).",
+    "index": "golden-record-idx",
+    "reindex_on": ["PatientRegistered", "ContactUpdated", "IdentifierLinked"],
+    "remove_on": ["PatientMerged (el absorbido sale del índice para no ser candidato otra vez)"]
+  },
+  "settings": {
+    "index": { "number_of_shards": 1, "number_of_replicas": 1 },
+    "analysis": {
+      "filter": {
+        "es_phonetic": { "type": "phonetic", "encoder": "double_metaphone", "replace": false },
+        "name_edge_ngram": { "type": "edge_ngram", "min_gram": 2, "max_gram": 15 }
+      },
+      "analyzer": {
+        "phonetic_es": { "tokenizer": "standard", "filter": ["lowercase", "es_phonetic"] },
+        "ngram_es":    { "tokenizer": "standard", "filter": ["lowercase", "asciifolding", "name_edge_ngram"] }
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "empi_id":       { "type": "keyword" },
+      "dni":           { "type": "keyword" },
+      "name_phonetic": { "type": "text", "analyzer": "phonetic_es",
+                         "search_analyzer": "phonetic_es" },
+      "name_ngram":    { "type": "text", "analyzer": "ngram_es",
+                         "search_analyzer": "standard" },
+      "birth_year":    { "type": "integer" },
+      "phone_last4":   { "type": "keyword" },
+      "sede":          { "type": "keyword" },
+      "record_status": { "type": "keyword" }
+    }
+  },
+  "_example_document": {
+    "empi_id": "EMPI-20250115-0A11BB22",
+    "dni": "45678912",
+    "name_phonetic": ["JN KRLS", "RMRS ST"],
+    "name_ngram": "juan carlos ramirez soto",
+    "birth_year": 1988,
+    "phone_last4": "4321",
+    "sede": "SEDE-CENTRAL",
+    "record_status": "ACTIVO"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "empi_id": "EMPI-20260711-8F3A1C7D",
+  "identifiers": [
+    { "system": "urn:pe:reniec:dni", "type": "DNI", "value": "45678912", "use": "official" },
+    { "system": "urn:sanared:portal", "type": "PID", "value": "PT-99182", "use": "secondary" }
+  ],
+  "name": { "given": "Juan Carlos", "family": "Ramirez Soto" },
+  "birth_date": "1988-04-12",
+  "gender": "male",
+  "telecom": [
+    { "system": "phone", "value": "+51987654321", "use": "mobile" },
+    { "system": "email", "value": "jc.ramirez@correo.pe" }
+  ],
+  "verification_status": "VERIFICADO",
+  "match_context": { "method": "no-match", "score": 0.41, "model_version": "fs-2026.1" },
+  "source_system": "PORTAL"
+}

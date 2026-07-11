@@ -1,0 +1,15 @@
+{
+  "candidate_pair_id": "01920000-00d1-7000-8000-0000000004a1",
+  "empi_id_existing": "EMPI-20250115-0A11BB22",
+  "incoming_ref": "STG-2026-000481",
+  "match_score": 0.902,
+  "band": "REVIEW",
+  "model_version": "fs-2026.1",
+  "features": {
+    "jaro_winkler_name": 0.94,
+    "metaphone_match": true,
+    "dob_equal": false,
+    "phone_equal": false,
+    "dni_equal": false
+  }
+}

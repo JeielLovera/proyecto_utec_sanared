@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mxfile host="app.diagrams.net" agent="Claude">
-  <diagram id="alt3m-empi" name="EMPI Alt.3 Mejorada - Arquitectura Cloud">
+  <!-- DEPRECADO: esta vista dibuja la admision entrando por API Gateway + WAF. Criterio corregido (ADR-A3M-003): los sistemas internos (Modulo de Admision on-prem) entran por un perimetro interno mTLS (API GW privado/ALB) via Direct Connect/VPN, sin WAF y sin pasar por Azure; Azure APIM es solo salida hacia legados. Vista vigente: Alt3M_Flujos_Componentes_Cloud.png/.svg (seccion 9 de 06_Alternativa3_Mejorada_Flujos_Registro.md). -->
+  <diagram id="alt3m-empi" name="DEPRECADO - ver Alt3M_Flujos_Componentes_Cloud (seccion 9)">
     <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
       <root>
         <mxCell id="0"/>

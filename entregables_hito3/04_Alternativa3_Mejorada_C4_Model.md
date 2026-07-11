@@ -62,7 +62,8 @@ Muestra los contenedores del EMPI **agrupados por nube según concordancia de do
 ```mermaid
 graph TB
     subgraph AWS["☁️ AWS — Dominio del PACIENTE (concuerda con Portal de Pacientes)"]
-        APIGW["API Gateway + WAF\n(canales externos de paciente)"]
+        APIGW["API Gateway + WAF\n(canal paciente · público)"]
+        APIMTLS["API GW privado / ALB\n(mTLS interno · sistemas internos)"]
         CORE["EMPI Core / PatientAggregate\n(FastAPI · ECS Fargate)\nCommands + Matcher tiempo real"]
         SEARCH["Amazon OpenSearch / Elasticsearch\n(índice de matching · blocking a escala)"]
         REDIS["ElastiCache Redis\n(cache de identidad · lookup DNI)"]
@@ -70,7 +71,7 @@ graph TB
     end
 
     subgraph AZURE["☁️ Azure — Integración CLÍNICA y FINANCIERA (concuerda con LIS + Pagos)"]
-        APIM["APIM (mTLS interno)"]
+        APIM["APIM (mTLS)\nsalida a legados"]
         ADCLI["Adaptadores Clínicos\n(HCE HL7v2↔FHIR · LIS)\nAzure Functions"]
         ADFIN["Adaptador Financiero\n(ERP · Portal de Pagos)\nAzure Functions"]
     end
@@ -85,11 +86,15 @@ graph TB
     end
 
     subgraph ONPREM["🏥 On-premises Lima"]
+        ADMIS["Módulo de Admisión\n(por sede · opera sobre HCE)"]
         HCE["HCE Oracle (sin cambios)"]
         PACSL["PACS local por sede"]
     end
 
     APIGW --> CORE
+    ADMIS -->|"mTLS · Direct Connect/VPN"| APIMTLS
+    APIMTLS --> CORE
+    ADMIS -.->|"opera sobre HCE"| HCE
     CORE --> REDIS
     CORE --> SEARCH
     CORE --> ES
@@ -120,8 +125,9 @@ Cada componente resulta de **dos decisiones separadas**: el **QUÉ** (qué tecno
 | **Batch de deduplicación** | Splink — *complejidad + portabilidad (backend-swappable)* | **GCP / BigQuery** — *concordancia (analítica)* | **Mixto**: QUÉ=complejidad · DÓNDE=concordancia |
 | **Vista 360°** | BigQuery — *analítica materializada* | **GCP** — *concordancia (analítica)* | Concordancia |
 | **Imágenes (PACS↔EMPI)** | Cloud Healthcare API (FHIR+DICOM) — *nativo de salud* | **GCP** — *concordancia (imágenes)* | Concordancia |
-| **Integración clínica y financiera** | Adaptadores + APIM mTLS | **Azure** — *concordancia (LIS + Portal de Pagos)* | Concordancia |
-| **Perímetro externo** | API Gateway + WAF | **AWS** — *concordancia (canales de paciente)* | Concordancia |
+| **Integración clínica y financiera (salida)** | Adaptadores + APIM mTLS (perímetro de **salida** a legados) | **Azure** — *concordancia (LIS + Portal de Pagos)* | Concordancia |
+| **Perímetro de entrada — paciente (público)** | API Gateway + WAF | **AWS** — *concordancia (canal de paciente)* | Concordancia |
+| **Perímetro de entrada — sistemas internos** | API GW privado / ALB + mTLS (Direct Connect/VPN) | **AWS** — *entrada al core sin salto cross-cloud (RNF-01)* | Dirección de tráfico (ADR-A3M-003) |
 | **Bus de eventos** | Kafka neutral (Confluent/Redpanda) — *anti-lock-in* | **Transversal** (junto al productor solo por latencia) | **Neutralidad** — concordancia NO aplica |
 
 ---
@@ -132,7 +138,7 @@ Descompone el contenedor **EMPI Core / PatientAggregate** (AWS · FastAPI/ECS Fa
 
 ```mermaid
 graph TB
-    GW["API Gateway + WAF"]
+    GW["Perímetro AWS\n(WAF público · mTLS interno)"]
     subgraph CORE["EMPI Core / PatientAggregate (AWS)"]
         API["API REST / FHIR\n(Patient + operación match PDQm)"]
         CMD["Command Handler\n(Register · Merge · RevertMerge\nDeactivate · ConfirmDistinct · UpdateContact)"]

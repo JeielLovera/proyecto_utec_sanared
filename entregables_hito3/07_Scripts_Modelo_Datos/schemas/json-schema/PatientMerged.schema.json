@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sanared.pe/empi/schemas/PatientMerged.schema.json",
+  "title": "PatientMerged.payload",
+  "description": "Fusión de registros: el survivor absorbe al merged (Flujo B2 auto >=0.95, o B3 confirmada) (§2.2, RF-02/03). retired_identifiers <-> survivor alimenta el ADT^A40 (§8).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["survivor_empi_id", "merged_empi_id", "decided_by", "match_score"],
+  "properties": {
+    "survivor_empi_id": {
+      "type": "string", "pattern": "^EMPI-[0-9]{8}-[0-9A-F]{8}$",
+      "description": "Registro que SOBREVIVE (existente)."
+    },
+    "merged_empi_id": {
+      "type": "string", "pattern": "^EMPI-[0-9]{8}-[0-9A-F]{8}$",
+      "description": "Registro absorbido -> queda INACTIVO_FUSIONADO."
+    },
+    "decided_by": {
+      "type": "string",
+      "description": "AUTO (score>=0.95) u OPERADOR:uXXX (revisión B3).",
+      "pattern": "^(AUTO|OPERADOR:[A-Za-z0-9_-]+)$"
+    },
+    "match_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "model_version": { "type": "string" },
+    "survivorship": {
+      "type": "object",
+      "description": "Qué valor gana por precedencia de fuente (auditable §5.1). Clave = atributo.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["value", "won_by"],
+        "properties": {
+          "value":  { "type": "string" },
+          "won_by": { "type": "string",
+            "enum": ["RENIEC", "HCE", "LIS", "PORTAL", "PACS", "ERP", "AGENDA"] }
+        }
+      }
+    },
+    "retired_identifiers": {
+      "type": "array",
+      "description": "IDs del absorbido que ahora apuntan al survivor (pasan a status=RETIRED).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["system", "type", "value"],
+        "properties": {
+          "system": { "type": "string", "format": "uri" },
+          "type":   { "type": "string",
+            "enum": ["DNI", "HIST", "MRN", "PID", "ACCESSION", "ACC", "SCHED-ID"] },
+          "value":  { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "survivor_empi_id": "EMPI-20250115-0A11BB22",
+  "merged_empi_id": "EMPI-20260711-8F3A1C7D",
+  "decided_by": "AUTO",
+  "match_score": 0.971,
+  "model_version": "fs-2026.1",
+  "survivorship": {
+    "family": { "value": "Ramirez Soto", "won_by": "HCE" },
+    "email":  { "value": "jc.ramirez@correo.pe", "won_by": "PORTAL" }
+  },
+  "retired_identifiers": [
+    { "system": "urn:sanared:hce", "type": "HIST", "value": "HIST-SEDE3-77123" }
+  ]
+}

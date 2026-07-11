@@ -1,0 +1,14 @@
+{
+  "event_id": "01920000-0004-7000-8000-000000000004",
+  "event_type": "PatientMerged",
+  "empi_id": "EMPI-20250115-0A11BB22",
+  "correlation_id": "01920000-0000-0000-0000-0000000000c3",
+  "occurred_at": "2026-07-11T14:31:05Z",
+  "data": {
+    "survivor_empi_id": "EMPI-20250115-0A11BB22",
+    "merged_empi_id": "EMPI-20260711-8F3A1C7D",
+    "retired_identifiers": [
+      { "system": "urn:sanared:hce", "type": "HIST", "value": "HIST-SEDE3-77123" }
+    ]
+  }
+}

@@ -20,7 +20,9 @@ Por eso ambos flujos comparten los **tres primeros pasos** (perímetro + matchin
 
 | Componente | Nube (concordancia) | Rol en el registro |
 |---|---|---|
-| **API Gateway + WAF** | AWS | Perímetro de canales de paciente (Portal, Admisión). Enruta el alta al Core. |
+| **API Gateway + WAF** | AWS | Perímetro **público** del canal de **paciente** (Portal, app móvil). Enruta el alta al Core. |
+| **Perímetro interno mTLS** (API GW privado / ALB) | AWS | Entrada de **sistemas internos** al EMPI por **mTLS, sin WAF** (ver Módulo de Admisión). |
+| **Módulo de Admisión local** | On-premises (por sede) | App existente que usa el **admisionista** en ventanilla; opera sobre la HCE y **consulta el EMPI en tiempo real** al admitir. Entra a AWS por **Direct Connect/VPN + mTLS**. |
 | **EMPI Core / PatientAggregate** (FastAPI · ECS Fargate) | AWS | Orquesta el matching y ejecuta los comandos `RegisterPatient` / `MergePatient`. |
 | **ElastiCache Redis** | AWS | Paso 1 del matching: *lookup* exacto por DNI (< 10 ms). |
 | **OpenSearch / Elasticsearch** *(prod)* · pg_trgm *(demo)* | AWS | Paso 2 del matching: *blocking* difuso de candidatos a escala. |
@@ -57,7 +59,7 @@ El EMPI aplica la **estrategia de 3 pasos con *early exit*** (fiel a Alt. 3 §2.
 
 ### 3.1 Pasos
 
-1. **Inicio del alta.** El actor envía los datos (DNI, nombre completo, fecha de nacimiento, celular, correo). Canal → **AWS API Gateway + WAF** (Portal/Admisión), que valida y enruta al **EMPI Core**.
+1. **Inicio del alta.** El actor envía los datos (DNI, nombre completo, fecha de nacimiento, celular, correo). El **canal depende del actor**: el **paciente** entra por el **Portal → AWS API Gateway + WAF** (perímetro público); el **admisionista** usa el **Módulo de Admisión local (on-prem, por sede)**, que entra a AWS por el **perímetro interno mTLS** (API GW privado/ALB) sobre **Direct Connect/VPN** — **sin WAF y sin pasar por Azure**. Ambos enrutan al **EMPI Core**.
 2. **Matching en tiempo real (3 pasos).**
    - **Paso 1 — Redis:** *miss* (el DNI no está cacheado).
    - **Paso 2 — OpenSearch:** *blocking* devuelve 0 candidatos (o candidatos irrelevantes).
@@ -77,7 +79,7 @@ El EMPI aplica la **estrategia de 3 pasos con *early exit*** (fiel a Alt. 3 §2.
 sequenceDiagram
     autonumber
     actor ACT as Paciente / Admisionista
-    participant GW as API Gateway + WAF (AWS)
+    participant GW as Perímetro AWS<br/>(WAF público · mTLS interno)
     participant CORE as EMPI Core (AWS · Fargate)
     participant REDIS as Redis (AWS)
     participant SEARCH as OpenSearch (AWS)
@@ -87,6 +89,7 @@ sequenceDiagram
     participant GCP as Cloud Healthcare API (GCP)
 
     ACT->>GW: Alta (DNI, nombre, FN, celular)
+    Note over ACT,GW: Paciente → Portal → WAF (público)<br/>Admisionista → Módulo de Admisión (on-prem)<br/>→ mTLS · Direct Connect/VPN (sin WAF, sin Azure)
     GW->>CORE: RegisterPatient (FHIR $match)
     CORE->>REDIS: 1) Lookup exacto por DNI
     REDIS-->>CORE: MISS
@@ -127,7 +130,7 @@ Este flujo tiene **tres ramas** según cómo se detecta la coincidencia:
 
 ### 4.1 Pasos
 
-1. **Inicio del alta.** Igual que en el Flujo A: el actor envía los datos → **API Gateway + WAF** → **EMPI Core**.
+1. **Inicio del alta.** Igual que en el Flujo A, **según el canal**: el paciente por **Portal → API Gateway + WAF**; el admisionista por el **Módulo de Admisión (on-prem) → perímetro interno mTLS** (Direct Connect/VPN, sin WAF). Ambos llegan al **EMPI Core**.
 2. **Matching en tiempo real (3 pasos):**
    - **Rama B1 (lo más común, ~80%).** **Paso 1 — Redis:** el DNI hace *hit* → el Core **devuelve el EMPI-ID existente en < 10 ms** y termina (early exit). No se crea nada; solo se registra el evento de *acceso/consulta* si aplica. **Se previno el duplicado.**
    - Si el DNI no coincide (p. ej. tipeado con error), se continúa: **Paso 2 — OpenSearch** recupera candidatos; **Paso 3 — Scoring** calcula `match_score`.
@@ -151,7 +154,7 @@ Este flujo tiene **tres ramas** según cómo se detecta la coincidencia:
 sequenceDiagram
     autonumber
     actor ACT as Admisionista / Paciente
-    participant GW as API Gateway + WAF (AWS)
+    participant GW as Perímetro AWS<br/>(WAF público · mTLS interno)
     participant CORE as EMPI Core (AWS · Fargate)
     participant REDIS as Redis (AWS)
     participant SEARCH as OpenSearch (AWS)
@@ -162,6 +165,7 @@ sequenceDiagram
     participant GCP as Cloud Healthcare API (GCP)
 
     ACT->>GW: Alta (mismo paciente, otro canal)
+    Note over ACT,GW: Admisionista → Módulo de Admisión (on-prem)<br/>→ mTLS · Direct Connect/VPN (sin WAF, sin Azure)
     GW->>CORE: RegisterPatient (FHIR $match)
     CORE->>REDIS: 1) Lookup exacto por DNI
 
@@ -220,7 +224,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    START([Alta de paciente<br/>API GW + WAF · AWS]) --> CORE[EMPI Core]
+    START([Alta de paciente<br/>perímetro AWS · WAF paciente / mTLS interno]) --> CORE[EMPI Core]
     CORE --> P1{Paso 1<br/>DNI en Redis?}
     P1 -->|HIT| EX["Devuelve EMPI-ID existente<br/>(B1 · &lt; 10 ms)"]
     P1 -->|MISS| P2[Paso 2 · Blocking OpenSearch]
@@ -264,6 +268,221 @@ flowchart TD
 | **Criterio de aceptación** | CA-01.1 | CA-01.2 / CA-02.1 |
 | **ADR relevante** | A3M-002, A3M-007 | A3M-011 (índice), A3M-008 (bus), A3M-004 (Azure ADT) |
 | **RNF** | RNF-01 (latencia), RNF-04 (FHIR/HL7) | RNF-01, RNF-03 (auditoría), RNF-05 (escala) |
+
+---
+
+## 9. Diagrama de componentes **granular** — todas las piezas cloud de los flujos
+
+Este diagrama abre cada caja lógica en las **piezas cloud concretas** que intervienen en los flujos de registro (alta nueva y fusión), incluyendo las piezas **de plataforma** (identidad, cifrado, red, observabilidad) y la **interconexión privada entre nubes**. El **bus Kafka se disponibiliza desde AWS** (Confluent Cloud en región AWS / MSK), junto al productor principal (EMPI Core), y sigue siendo **neutral por protocolo**: Azure y GCP lo consumen como clientes Kafka a través de enlaces privados.
+
+**Convención de líneas:**
+- **Línea sólida** → camino caliente / sincrónico del alta (respuesta al actor).
+- **Línea punteada** → soporte transversal (identidad/cifrado/red/observabilidad/secretos).
+- **Línea gruesa (`==>`)** → **interconexión privada cross-cloud** (PrivateLink / Private Service Connect / ExpressRoute).
+- **Etiqueta** → evento, protocolo o paso del matching.
+
+```mermaid
+flowchart TB
+    subgraph ACTORES["👤 Actores / Canales"]
+        PAC["Paciente"]
+        ADM["Admisionista"]
+        OPD["Operador<br/>Gobierno de Datos"]
+    end
+
+    subgraph AWS["☁️ AWS — Dominio del PACIENTE + Bus de eventos"]
+        COG["Amazon Cognito<br/>auth paciente (JWT)"]
+        PORTAL["Portal de Pacientes<br/>(existente)"]
+        WAF["AWS WAF"]
+        APIGW["Amazon API Gateway<br/>(canales públicos · WAF)"]
+        APIMTLS(["API Gateway privado / ALB<br/>mTLS interno (sistemas internos)"])
+        VPCL(["API Gateway VPC Link"])
+        ELB["Elastic Load Balancing<br/>NLB / ALB"]
+        ECR["Amazon ECR<br/>imagen EMPI Core"]
+        FARGATE["Amazon ECS Fargate<br/>EMPI Core · PatientAggregate<br/>+ Matcher tiempo real"]
+        REDIS["Amazon ElastiCache Redis<br/>Paso 1 · lookup DNI"]
+        OS["Amazon OpenSearch<br/>Paso 2 · blocking a escala"]
+        RDS[("Amazon RDS PostgreSQL<br/>patient_events · golden_record_view<br/>audit_trail · review_queue")]
+        SM["AWS Secrets Manager<br/>credenciales / certs"]
+        SSM["SSM Parameter Store<br/>umbrales 0.95 / 0.85"]
+        KAFKA["Kafka en AWS<br/>Confluent Cloud (región AWS) / MSK<br/>topics identity.patient.* · DLQ"]
+        PLINK(["AWS PrivateLink<br/>VPC Endpoints"])
+        subgraph AWSX["Capa transversal AWS"]
+            VPC["Amazon VPC<br/>subnets · security groups"]
+            IAM["AWS IAM<br/>roles de servicio"]
+            KMS["AWS KMS<br/>cifrado en reposo"]
+            CW["Amazon CloudWatch<br/>+ X-Ray · logs / métricas"]
+        end
+    end
+
+    subgraph AZURE["☁️ Azure — Integración CLÍNICA y FINANCIERA"]
+        AZPL(["Azure Private Link"])
+        APIM["Azure API Management<br/>mTLS interno"]
+        FCLI["Azure Functions<br/>Adaptador Clínico<br/>HL7v2 ADT^A28 / A40"]
+        FFIN["Azure Functions<br/>Adaptador Financiero"]
+        LIS[("Azure SQL MI · LIS<br/>existente")]
+        PAGOS["Portal de Pagos<br/>existente"]
+        subgraph AZUREX["Capa transversal Azure"]
+            AVNET["Azure VNet<br/>subnets · NSG"]
+            MI["Managed Identity"]
+            KV["Azure Key Vault<br/>cred. Kafka / certs mTLS"]
+        end
+    end
+
+    subgraph GCP["☁️ GCP — IMÁGENES y ANALÍTICA"]
+        PSC(["Private Service Connect"])
+        GRUN["Cloud Run / Functions<br/>Consumidor Kafka"]
+        FHIR["Cloud Healthcare API<br/>FHIR Store"]
+        DICOM["Cloud Healthcare API<br/>DICOM Store"]
+        GCS["Cloud Storage<br/>PACS réplica"]
+        BQ["BigQuery<br/>Vista 360°"]
+        subgraph GCPX["Capa transversal GCP"]
+            GVPC["VPC + firewall"]
+            GIAM["Cloud IAM<br/>Service Accounts"]
+            GSM["Secret Manager<br/>cred. Kafka (SASL/mTLS)"]
+        end
+    end
+
+    subgraph ONPREM["🏥 On-premises Lima"]
+        ADMIS["Módulo de Admisión local<br/>(por sede · opera sobre HCE)"]
+        XR{{"ExpressRoute / VPN"}}
+        DX{{"Direct Connect / VPN"}}
+        HCE[("HCE Oracle · HL7 v2")]
+        PACSL["PACS local por sede"]
+    end
+
+    subgraph PRIV["🔒 Nube privada"]
+        ERP[("ERP Facturación")]
+    end
+
+    %% Camino caliente del alta — canal PACIENTE (público, WAF)
+    PAC --> PORTAL --> WAF --> APIGW
+    PORTAL -->|login| COG
+    COG -.->|valida JWT| APIGW
+    APIGW --> VPCL --> ELB --> FARGATE
+
+    %% Camino de alta — canal ADMISIONISTA (interno, mTLS, sin WAF)
+    ADM --> ADMIS
+    ADMIS ==>|"mTLS"| DX
+    DX ==>|"enlace privado on-prem↔AWS"| APIMTLS
+    APIMTLS --> FARGATE
+    ADMIS -.->|"opera sobre HCE"| HCE
+    ECR -.->|imagen| FARGATE
+    FARGATE -->|"1) lookup / cache DNI"| REDIS
+    FARGATE -->|"2) blocking + index"| OS
+    FARGATE -->|"append eventos · proyecta"| RDS
+    FARGATE -.->|creds| SM
+    FARGATE -.->|umbrales| SSM
+    OPD -->|"resuelve cola B3"| RDS
+    FARGATE -->|"publica created / merged"| KAFKA
+
+    %% Plataforma transversal AWS (aplica a todo el dominio)
+    IAM -.-> FARGATE
+    KMS -.-> RDS
+    CW -.-> FARGATE
+    VPC -.-> FARGATE
+
+    %% Interconexión privada cross-cloud
+    KAFKA --> PLINK
+    PLINK ==>|"Azure Private Link · async"| AZPL
+    PLINK ==>|"Private Service Connect · async"| PSC
+    AZPL --> FCLI
+    AZPL --> FFIN
+    PSC --> GRUN
+
+    %% Azure — integración
+    FCLI --> APIM
+    FCLI -.->|certs| KV
+    FCLI -.-> MI
+    AVNET -.-> FCLI
+    APIM ==>|"ADT^A28 / A40 · mTLS · ExpressRoute"| XR ==> HCE
+    FCLI -->|"vincula resultados · EMPI-ID"| LIS
+    FFIN -->|"EMPI-ID activo"| ERP
+    FFIN -->|"consolida cuentas"| PAGOS
+
+    %% GCP — consumidor del bus + imágenes y 360
+    GRUN -->|"escribe FHIR / tag DICOM"| FHIR
+    GIAM -.-> GRUN
+    GSM -.->|cred. Kafka| GRUN
+    GVPC -.-> GRUN
+    FHIR --> DICOM
+    DICOM -->|"etiqueta / re-etiqueta EMPI-ID"| GCS
+    DICOM -.->|"EMPI-ID en tags DICOM"| PACSL
+    FHIR --> BQ
+    RDS -.->|"datos de identidad"| BQ
+
+    style AWS fill:#e3f2fd,stroke:#1565c0
+    style AWSX fill:#bbdefb,stroke:#0d47a1
+    style AZURE fill:#e8eaf6,stroke:#283593
+    style AZUREX fill:#c5cae9,stroke:#1a237e
+    style GCP fill:#e8f5e9,stroke:#1b5e20
+    style GCPX fill:#c8e6c9,stroke:#2e7d32
+    style ONPREM fill:#f3e5f5,stroke:#6a1b9a
+    style PRIV fill:#fce4ec,stroke:#ad1457
+    style ACTORES fill:#eceff1,stroke:#455a64
+```
+
+**Versión con íconos nativos de cada nube** (misma topología, generada como *diagram-as-code* con `diagrams` + Graphviz):
+
+![Alt. 3 Mejorada — Piezas cloud de los flujos de registro](Alt3M_Flujos_Componentes_Cloud.png)
+
+> Fuentes reproducibles: imagen vectorial `Alt3M_Flujos_Componentes_Cloud.svg` y script `gen_diagrams_p9.py`. Los íconos son los oficiales de AWS/Azure/GCP; Confluent/Kafka usa el ícono de **Amazon MSK**, Cloud Healthcare API usa el ícono de **Endpoints**, y las apps existentes sin ícono propio (Portal de Pagos, ERP, PACS local) se muestran como nodos etiquetados.
+
+### 9.1 Qué pieza participa en cada flujo
+
+| Pieza cloud | Flujo A (nuevo) | Flujo B (existente) |
+|---|:---:|:---:|
+| AWS WAF + API Gateway (canal **paciente**, público) | ✅ perímetro público | ✅ perímetro público |
+| Perímetro **interno mTLS** + **Módulo de Admisión** (on-prem) | ✅ alta por ventanilla | ✅ alta por ventanilla |
+| ECS Fargate (EMPI Core) | ✅ `RegisterPatient` | ✅ `MergePatient` / lookup |
+| ElastiCache Redis | ✅ miss → cachea | ✅ **hit → B1 early exit** |
+| OpenSearch | ✅ index nuevo GR | ✅ blocking (B2/B3) |
+| RDS PostgreSQL | ✅ `PatientRegistered` | ✅ `PatientMerged` / `MatchPending` |
+| Kafka (bus) | ✅ `created` | ✅ `merged` (solo B2) |
+| Azure Functions clínico + APIM mTLS | ✅ `ADT^A28` → HCE | ✅ `ADT^A40` → HCE |
+| Azure Functions financiero | ✅ EMPI-ID → ERP | ✅ consolida cuentas |
+| Key Vault / Managed Identity | ✅ soporte mTLS | ✅ soporte mTLS |
+| Cloud Healthcare (FHIR/DICOM) | ✅ prepara tag | ✅ **re-tag inter-sede** |
+| Cloud Storage / PACS | ✅ tag futuro | ✅ unifica imágenes |
+| BigQuery | ✅ inicia 360° | ✅ recalcula 360° |
+
+> **Clave de lectura:** ambos flujos usan **las mismas piezas cloud**; lo que cambia es el **comando** (`RegisterPatient` vs `MergePatient`) y el **mensaje** al HCE (`ADT^A28` vs `ADT^A40`). La única pieza que puede **cortar el flujo antes** es Redis (Paso 1 · rama B1).
+
+### 9.2 Piezas de plataforma AWS (transversales) y su función
+
+Estas piezas no aparecen en una sola arista del flujo porque **sostienen todo el dominio AWS**; se listan aquí para dejar explícito el conocimiento de la nube y el cumplimiento de RNF.
+
+| Pieza AWS | Categoría | Función en la solución | RNF / requisito |
+|---|---|---|---|
+| **Amazon Cognito** | Identidad (usuario) | Autentica al paciente en el Portal y emite el **JWT** que valida el API Gateway | RNF-03 (MFA/SSO) |
+| **AWS IAM** (roles de servicio) | Identidad (máquina) | Permite a Fargate acceder a RDS/OpenSearch/Redis/Secrets y publicar al bus **sin claves embebidas** — análogo AWS del *Managed Identity* de Azure | RNF-03 |
+| **AWS KMS** | Cifrado | Cifra en reposo RDS, OpenSearch, ElastiCache y Secrets Manager | RNF-03 · Ley 29733 |
+| **AWS Secrets Manager** | Secretos | Guarda credenciales de BD y certificados | RNF-03 |
+| **SSM Parameter Store** | Configuración | Umbrales de matching **0.95 / 0.85 configurables en caliente** | RNF-06.2 |
+| **Amazon ECR** | Despliegue | Aloja la imagen del contenedor EMPI Core que ejecuta Fargate | ADR-A3M-010 (IaC) |
+| **Elastic Load Balancing (NLB/ALB)** + **API Gateway VPC Link** | Red / cómputo | Enruta el tráfico del API Gateway al contenedor **privado** en la VPC | RNF-01 |
+| **API Gateway privado / ALB con mTLS** | Perímetro interno | Entrada de **sistemas internos** (Módulo de Admisión on-prem, Agenda) por **mTLS, sin WAF**; llega al core en AWS sin salto cross-cloud | RNF-01 · ADR-A3M-003 |
+| **AWS Direct Connect / VPN** | Interconexión híbrida | Enlace privado **on-prem ↔ AWS** para que la admisión alcance el EMPI Core en tiempo real | RNF-01 · INI-13 |
+| **Amazon VPC** (subnets, security groups) | Red | Tejido de red aislado donde viven Core, datos y bus | RNF-03 |
+| **AWS PrivateLink (VPC Endpoints)** | Interconexión | Expone el bus Kafka a los consumidores de Azure/GCP por **enlace privado** (sin Internet) | RNF-03 · PT-02 |
+| **Amazon CloudWatch (+ X-Ray)** | Observabilidad | Logs estructurados, métricas de latencia P95 y trazas | RNF-06 |
+
+> **Nota de diseño (decisión, no omisión):** **no** se usan Amazon EventBridge ni SQS como bus: la Alt. 3 Mejorada elige **Kafka neutral** (ADR-A3M-008). La DLQ existe, pero a nivel del consumidor Kafka, no como cola AWS propietaria.
+
+### 9.3 Interconexión entre nubes (cómo cruzan los eventos)
+
+El bus vive en AWS pero **debe alimentar a Azure y GCP**. La conectividad es **privada y asíncrona** (fuera del camino crítico del alta):
+
+| Origen → Destino | Mecanismo | Qué cruza |
+|---|---|---|
+| **On-prem (Módulo de Admisión)** → **AWS (EMPI Core)** | **Direct Connect / VPN** + mTLS (perímetro interno, sin WAF) | Alta/consulta de identidad en tiempo real (INI-13) |
+| **AWS (Kafka)** → **Azure (Functions)** | AWS PrivateLink ↔ **Azure Private Link** | `identity.patient.*` (created / merged) |
+| **AWS (Kafka)** → **GCP (Cloud Run → Healthcare API)** | AWS PrivateLink ↔ **GCP Private Service Connect** | `identity.patient.created / merged` |
+| **Azure (APIM)** → **On-prem (HCE)** | **ExpressRoute / VPN** | `ADT^A28 / A40` (HL7 v2) sobre mTLS |
+| **GCP (DICOM Store)** → **On-prem (PACS)** | VPN / Interconnect | EMPI-ID en tags DICOM |
+
+> El productor (EMPI Core) publica **local** en AWS con baja latencia; el consumo cross-cloud es **asíncrono con DLQ**, de modo que un fallo de red entre nubes **no bloquea el alta** (RNF-01). Colocar el bus en AWS **no lo vuelve "de AWS"**: al hablar protocolo Kafka, el broker es reemplazable (Confluent → MSK → Redpanda) sin tocar el código (ADR-A3M-008).
+
+> **Piezas que consumen el bus en GCP:** el consumidor es **Cloud Run** (cliente Kafka), autenticado con la credencial de **Secret Manager** bajo un **Service Account (Cloud IAM)** dentro de la **VPC**. Las demás piezas GCP (Healthcare API, Cloud Storage, BigQuery, Datastream, etc.) son **aguas abajo** del consumidor, no del canal del bus. Es el espejo del patrón de Azure (Functions + Key Vault/Managed Identity).
 
 ---
 

@@ -22,7 +22,7 @@
 |---|---|---|---|
 | **ADR-A3M-001** | **Concordancia de dominio** como principio de asignación de componentes a nubes | Evita que funcionalidad de paciente caiga en una nube de facturación; co-loca por afinidad de negocio | Reparto por preferencia técnica; nube única |
 | **ADR-A3M-002** | Núcleo de identidad + Event Store en **AWS RDS PostgreSQL** | El dominio del paciente ya vive en AWS (Portal + RDS); reutiliza base existente y reduce complejidad | Cosmos DB (Azure) — concuerda con diagnóstico/pagos, no con paciente; DynamoDB |
-| **ADR-A3M-003** | Perímetro **dual**: AWS API GW+WAF (canales de paciente) / Azure APIM mTLS (sistemas internos) | Tráfico externo necesita WAF; interno necesita autenticación de máquina | Solo un gateway |
+| **ADR-A3M-003** | **Perímetro por dirección de tráfico:** (a) canal **público de paciente** → AWS API GW **+ WAF**; (b) **entrada de sistemas internos** (Módulo de Admisión on-prem, Agenda) → **API GW privado / ALB con mTLS en AWS**, alcanzado por **Direct Connect/VPN** (sin WAF y **sin pasar por Azure**); (c) **salida** del EMPI hacia legados (HCE/LIS/ERP) → **Azure APIM mTLS** | El tráfico web público necesita WAF; los sistemas internos necesitan mTLS y deben llegar al **core (AWS)** sin salto cross-cloud (RNF-01); la propagación a legados se gobierna desde Azure por concordancia clínica | **Enrutar la entrada de admisión por Azure APIM** (añade un salto cross-cloud en el *hot path* y viola RNF-01); un solo gateway |
 | **ADR-A3M-004** | Plano de **integración clínica y financiera en Azure** | Concuerda con LIS (Azure SQL) y Portal de Pagos (Azure) ya existentes | Integración en AWS (rompe concordancia clínica) |
 | **ADR-A3M-005** | **Imágenes y analítica en GCP** (Cloud Healthcare API + BigQuery) | Concuerda con PACS réplica y Salud Ocupacional ya en GCP; FHIR/DICOM nativos | Synapse+Databricks en Azure (rompe concordancia de imágenes) |
 | **ADR-A3M-006** | **El PACS depende del EMPI-ID** para consolidación inter-sede (complemento Fase 2) | Sin identificador común, las imágenes siguen fragmentadas por sede | Mantener PACS con IDs locales |
@@ -35,6 +35,17 @@
 ---
 
 ## Explicaciones ampliadas
+
+### ADR-A3M-003 (perímetro) — entrada al EMPI vs. salida hacia legados
+
+El perímetro **no es "AWS externo / Azure interno" sin más**: se decide por **dirección del tráfico**, y confundirlas lleva a un error de diseño (enrutar la admisión por Azure).
+
+- **Entrada al EMPI (consultar/crear identidad).** Ocurre en el *hot path* del alta (tiempo real, INI-13). Dos canales:
+  - **Paciente (público):** Portal / app móvil → **AWS API Gateway + WAF** (protección web).
+  - **Sistema interno (Módulo de Admisión on-prem, Agenda):** máquina-a-máquina → **API Gateway privado / ALB con mTLS en AWS**, alcanzado por **Direct Connect/VPN**. **No usa WAF** (no es tráfico web) y **no pasa por Azure** (sería un salto cross-cloud innecesario contra el core que vive en AWS → viola RNF-01).
+- **Salida del EMPI (propagar el EMPI-ID a los legados).** HCE (`ADT^A28/A40`), LIS, ERP. Es **asíncrona** y se gobierna desde **Azure APIM mTLS** + adaptadores, por **concordancia clínica** (LIS/Pagos ya viven en Azure).
+
+> **Regla mental:** *entrar a preguntar por identidad* = perímetro del core en **AWS** (WAF si es paciente, mTLS si es sistema interno). *Salir a avisar la identidad* = **Azure APIM**. El error corregido fue tratar la admisión (entrada) como si fuera salida.
 
 ### ADR-A3M-008 (bus de eventos) — QUÉ vs. DÓNDE y por qué la concordancia NO aplica
 

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sanared.pe/empi/schemas/MergeReverted.schema.json",
+  "title": "MergeReverted.payload",
+  "description": "Reversión de una fusión previa (§2.2, RF-06). Restituye el registro absorbido a ACTIVO. Se publica en identity.patient.merged con revert=true.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["merge_id", "survivor_empi_id", "restored_empi_id", "reverted_by"],
+  "properties": {
+    "merge_id": {
+      "type": "string", "format": "uuid",
+      "description": "merge_link.merge_id de la fusión que se deshace."
+    },
+    "survivor_empi_id": { "type": "string", "pattern": "^EMPI-[0-9]{8}-[0-9A-F]{8}$" },
+    "restored_empi_id": {
+      "type": "string", "pattern": "^EMPI-[0-9]{8}-[0-9A-F]{8}$",
+      "description": "Registro que vuelve a ACTIVO."
+    },
+    "revert": { "type": "boolean", "const": true },
+    "reverted_by": {
+      "type": "string",
+      "pattern": "^OPERADOR:[A-Za-z0-9_-]+$",
+      "description": "Un revert siempre es una decisión humana de gobierno."
+    },
+    "reason": { "type": "string" },
+    "restored_identifiers": {
+      "type": "array",
+      "description": "IDs que vuelven a status=ACTIVE bajo el registro restituido.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["system", "type", "value"],
+        "properties": {
+          "system": { "type": "string", "format": "uri" },
+          "type":   { "type": "string",
+            "enum": ["DNI", "HIST", "MRN", "PID", "ACCESSION", "ACC", "SCHED-ID"] },
+          "value":  { "type": "string" }
+        }
+      }
+    }
+  }
+}

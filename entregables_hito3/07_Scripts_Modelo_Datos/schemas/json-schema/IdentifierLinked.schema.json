@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sanared.pe/empi/schemas/IdentifierLinked.schema.json",
+  "title": "IdentifierLinked.payload",
+  "description": "Enriquecimiento del crosswalk: un paciente EXISTENTE llega con un identificador local nuevo, sin merge (§2.2, RF-04). Hace crecer el xref de forma auditable.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["empi_id", "identifier", "source_system"],
+  "properties": {
+    "empi_id": { "type": "string", "pattern": "^EMPI-[0-9]{8}-[0-9A-F]{8}$" },
+    "identifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system", "type", "value"],
+      "properties": {
+        "system": { "type": "string", "format": "uri" },
+        "type":   { "type": "string",
+          "enum": ["DNI", "HIST", "MRN", "PID", "ACCESSION", "ACC", "SCHED-ID"] },
+        "value":  { "type": "string", "minLength": 1, "maxLength": 64 },
+        "assigning_sede": { "type": "string",
+          "description": "Sede que asignó el ID (clave para PACS/HCE por sede)." },
+        "use":    { "type": "string", "enum": ["official", "secondary", "old"] }
+      }
+    },
+    "linked_reason": {
+      "type": "string",
+      "description": "Motivo del enlace (admission, image-share, billing, ...).",
+      "examples": ["admission"]
+    },
+    "source_system": {
+      "type": "string",
+      "enum": ["RENIEC", "HCE", "LIS", "PORTAL", "PACS", "ERP", "AGENDA"]
+    }
+  }
+}

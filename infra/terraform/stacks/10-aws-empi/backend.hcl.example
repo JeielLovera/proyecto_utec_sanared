@@ -1,0 +1,6 @@
+# Copia a backend.hcl y rellena con los outputs de bootstrap/.
+bucket         = "sanared-empi-tfstate-REEMPLAZAR_ACCOUNT_ID"
+key            = "stacks/10-aws-empi/terraform.tfstate"
+region         = "us-east-1"
+dynamodb_table = "sanared-empi-tflock"
+encrypt        = true

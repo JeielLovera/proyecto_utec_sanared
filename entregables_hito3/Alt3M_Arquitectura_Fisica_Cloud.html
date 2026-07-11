@@ -22,6 +22,10 @@
   <h1>Arquitectura Física / Despliegue Cloud — EMPI (Alternativa 3 Mejorada)</h1>
   <p class="sub">Componentes cloud por concordancia de dominio · íconos de servicio por proveedor · conexiones de red y protocolos · usuarios que los consumen — Clínica SanaRed Integrada, Hito 3</p>
 
+  <div style="margin:0 0 18px;padding:12px 16px;border-left:4px solid #f57f17;background:#fff8e1;border-radius:8px;font-size:13px;color:#5b6b7a;">
+    <b style="color:#e65100;">⚠️ Diagrama superado (deprecado).</b> Esta vista dibuja la admisión entrando por el <b>API Gateway + WAF</b>, criterio que fue <b>corregido</b>: los <b>sistemas internos</b> (Módulo de Admisión on-prem) entran por un <b>perímetro interno mTLS</b> (API GW privado / ALB) vía <b>Direct Connect/VPN</b>, sin WAF y sin pasar por Azure; <b>Azure APIM</b> es solo el perímetro de <b>salida</b> hacia legados (HCE/LIS/ERP). Vista vigente: <code>Alt3M_Flujos_Componentes_Cloud.png/.svg</code> (§9 de <code>06_Alternativa3_Mejorada_Flujos_Registro.md</code>) y los <code>Alt3M_C4_Model*.dsl</code> (ver <b>ADR-A3M-003</b>).
+  </div>
+
   <svg viewBox="0 0 1520 800" role="img" aria-label="Arquitectura física cloud del EMPI">
     <defs>
       <marker id="arrow" markerWidth="10" markerHeight="8" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 z" fill="#455A64"/></marker>

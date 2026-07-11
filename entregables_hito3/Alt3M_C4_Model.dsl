@@ -34,6 +34,9 @@ workspace "EMPI SanaRed - Alternativa 3 Mejorada (Multicloud Concordante)" "Mode
         erp = softwareSystem "ERP Facturacion" "Facturacion y cobros (nube privada)." {
             tags "Existente"
         }
+        admisionMod = softwareSystem "Modulo de Admision (on-prem)" "Registro/admision por sede; opera sobre la HCE. Consulta el EMPI en tiempo real al admitir." {
+            tags "Existente"
+        }
 
         // ============================================================
         // EMPI - Sistema en foco
@@ -41,7 +44,10 @@ workspace "EMPI SanaRed - Alternativa 3 Mejorada (Multicloud Concordante)" "Mode
         empi = softwareSystem "EMPI - Identidad Unificada de Pacientes" "Crea y mantiene el EMPI-ID canonico, deduplica y ofrece la vista 360 del paciente." {
 
             group "AWS - Dominio del Paciente" {
-                apiGwExt = container "API Gateway + WAF" "Perimetro externo de los canales de paciente (rate limiting, WAF, circuit breaker)." "AWS API Gateway" {
+                apiGwExt = container "API Gateway + WAF" "Perimetro publico del canal de paciente (Portal, app movil): rate limiting, WAF, circuit breaker." "AWS API Gateway" {
+                    tags "AWS"
+                }
+                apiGwInt = container "API GW privado / ALB (mTLS interno)" "Entrada de sistemas internos (Modulo de Admision on-prem, Agenda) por mTLS; sin WAF y sin salto a Azure." "AWS ALB / API Gateway privado" {
                     tags "AWS"
                 }
                 core = container "EMPI Core / PatientAggregate" "Identidad, commands de dominio y matching en tiempo real." "FastAPI / ECS Fargate" {
@@ -65,7 +71,7 @@ workspace "EMPI SanaRed - Alternativa 3 Mejorada (Multicloud Concordante)" "Mode
             }
 
             group "Azure - Integracion Clinica y Financiera" {
-                apim = container "APIM (mTLS interno)" "Perimetro de sistemas internos y on-premises." "Azure API Management" {
+                apim = container "APIM (mTLS)" "Perimetro de SALIDA del EMPI hacia legados (HCE/LIS/ERP)." "Azure API Management" {
                     tags "Azure"
                 }
                 adClinico = container "Adaptadores Clinicos" "HCE (HL7 v2 <-> FHIR) y LIS." "Azure Functions" {
@@ -96,15 +102,18 @@ workspace "EMPI SanaRed - Alternativa 3 Mejorada (Multicloud Concordante)" "Mode
         // RELACIONES - Contexto y Contenedor
         // ============================================================
         paciente  -> portal "Se registra / consulta"
-        admision  -> empi.apiGwExt "Admite pacientes"
+        admision  -> admisionMod "Admite en ventanilla"
         medico    -> empi.analytics "Consulta vista 360"
         radiologo -> empi.healthcare "Consulta imagenes inter-sede (por EMPI-ID)"
         opDatos   -> empi.core "Revisa fusiones"
 
-        portal -> empi.apiGwExt "Valida/crea identidad (match FHIR)"
-        agenda -> empi.apiGwExt "Valida identidad"
+        portal      -> empi.apiGwExt "Valida/crea identidad (match FHIR)"
+        agenda      -> empi.apiGwInt "Valida identidad (mTLS)"
+        admisionMod -> empi.apiGwInt "Consulta/crea identidad (mTLS, Direct Connect/VPN)"
+        admisionMod -> hce "Opera sobre HCE"
 
-        empi.apiGwExt   -> empi.core "Enruta"
+        empi.apiGwExt   -> empi.core "Enruta (paciente)"
+        empi.apiGwInt   -> empi.core "Enruta (interno)"
         empi.core       -> empi.cache "Lookup DNI"
         empi.core       -> empi.searchIdx "Blocking de candidatos"
         empi.core       -> empi.eventStore "Append eventos + proyecta"
@@ -123,7 +132,8 @@ workspace "EMPI SanaRed - Alternativa 3 Mejorada (Multicloud Concordante)" "Mode
         // ============================================================
         // RELACIONES - Componente (EMPI Core)
         // ============================================================
-        empi.apiGwExt              -> empi.core.apiRest "HTTPS"
+        empi.apiGwExt              -> empi.core.apiRest "HTTPS (paciente)"
+        empi.apiGwInt              -> empi.core.apiRest "HTTPS (mTLS interno)"
         empi.core.apiRest          -> empi.core.cmdHandler "Invoca commands"
         empi.core.apiRest          -> empi.core.matcher "Consulta identidad"
         empi.core.matcher          -> empi.cache "Lookup DNI"
@@ -143,6 +153,9 @@ workspace "EMPI SanaRed - Alternativa 3 Mejorada (Multicloud Concordante)" "Mode
                 tags "AWS"
                 deploymentNode "Amazon API Gateway" {
                     containerInstance empi.apiGwExt
+                }
+                deploymentNode "API Gateway privado / ALB (mTLS)" {
+                    containerInstance empi.apiGwInt
                 }
                 deploymentNode "ECS Fargate (Multi-AZ)" {
                     containerInstance empi.core
@@ -194,6 +207,9 @@ workspace "EMPI SanaRed - Alternativa 3 Mejorada (Multicloud Concordante)" "Mode
                 tags "On-prem"
                 deploymentNode "HCE Oracle" {
                     softwareSystemInstance hce
+                }
+                deploymentNode "Modulo de Admision (por sede)" {
+                    softwareSystemInstance admisionMod
                 }
             }
         }

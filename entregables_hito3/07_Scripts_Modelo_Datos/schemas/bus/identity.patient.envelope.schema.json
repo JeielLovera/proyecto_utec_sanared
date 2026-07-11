@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sanared.pe/empi/schemas/bus/identity.patient.envelope.schema.json",
+  "title": "identity.patient.* — bus envelope",
+  "description": "Envelope del mensaje que viaja cross-cloud por Kafka/Confluent (§6). Es un SUBCONJUNTO del evento: nunca el registro completo (minimización §10). Consumido por Azure (adaptadores HL7), GCP (Healthcare API, BigQuery).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "event_type", "empi_id", "correlation_id", "occurred_at", "data"],
+  "properties": {
+    "event_id":   { "type": "string", "format": "uuid",
+      "description": "Mismo event_id del Event Store (idempotencia del consumidor)." },
+    "event_type": {
+      "type": "string",
+      "enum": ["PatientRegistered", "IdentifierLinked", "ContactUpdated",
+               "PatientMerged", "MergeReverted", "PatientDeactivated"],
+      "description": "Solo eventos que cruzan. PatientMatchPending/PatientAccessed son internos."
+    },
+    "empi_id": {
+      "type": "string", "pattern": "^EMPI-[0-9]{8}-[0-9A-F]{8}$",
+      "description": "En PatientMerged/MergeReverted es el survivor."
+    },
+    "correlation_id": { "type": "string", "format": "uuid" },
+    "occurred_at":    { "type": "string", "format": "date-time" },
+    "revert": {
+      "type": "boolean",
+      "description": "true en MergeReverted publicado sobre identity.patient.merged (§2.2)."
+    },
+    "data": {
+      "type": "object",
+      "description": "Subconjunto mínimo por tipo de evento. Cada consumidor pide a la fuente el resto (§6).",
+      "properties": {
+        "survivor_empi_id": { "type": "string", "pattern": "^EMPI-[0-9]{8}-[0-9A-F]{8}$" },
+        "merged_empi_id":   { "type": "string", "pattern": "^EMPI-[0-9]{8}-[0-9A-F]{8}$" },
+        "identifiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["system", "type", "value"],
+            "properties": {
+              "system": { "type": "string", "format": "uri" },
+              "type":   { "type": "string" },
+              "value":  { "type": "string" }
+            }
+          }
+        },
+        "retired_identifiers": {
+          "type": "array",
+          "description": "Par retired<->survivor que el adaptador Azure convierte en MRG del ADT^A40 (§8).",
+          "items": {
+            "type": "object",
+            "required": ["system", "type", "value"],
+            "properties": {
+              "system": { "type": "string", "format": "uri" },
+              "type":   { "type": "string" },
+              "value":  { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "event_id": "01920000-0004-7000-8000-000000000004",
+      "event_type": "PatientMerged",
+      "empi_id": "EMPI-20250115-0A11BB22",
+      "correlation_id": "01920000-0000-0000-0000-0000000000c3",
+      "occurred_at": "2026-07-11T14:31:05Z",
+      "data": {
+        "survivor_empi_id": "EMPI-20250115-0A11BB22",
+        "merged_empi_id": "EMPI-20260711-8F3A1C7D",
+        "retired_identifiers": [
+          { "system": "urn:sanared:hce", "type": "HIST", "value": "HIST-SEDE3-77123" }
+        ]
+      }
+    }
+  ]
+}
