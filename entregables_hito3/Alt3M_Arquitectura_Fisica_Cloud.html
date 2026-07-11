@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arquitectura Física Cloud — EMPI Alt. 3 Mejorada</title>
+<style>
+  :root { --ink:#1f2933; --muted:#5b6b7a; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:24px; font-family:"Segoe UI", Arial, sans-serif; color:var(--ink); background:#fff; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  p.sub { margin:0 0 18px; color:var(--muted); font-size:14px; }
+  .wrap { max-width:1520px; margin:0 auto; }
+  svg { width:100%; height:auto; border:1px solid #e3e8ee; border-radius:12px; background:#fbfcfe; }
+  .legend { display:flex; flex-wrap:wrap; gap:14px 26px; margin-top:16px; font-size:13px; color:var(--muted); }
+  .legend b { color:var(--ink); }
+  .sw { display:inline-block; width:26px; height:12px; border-radius:3px; vertical-align:middle; margin-right:6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Arquitectura Física / Despliegue Cloud — EMPI (Alternativa 3 Mejorada)</h1>
+  <p class="sub">Componentes cloud por concordancia de dominio · íconos de servicio por proveedor · conexiones de red y protocolos · usuarios que los consumen — Clínica SanaRed Integrada, Hito 3</p>
+
+  <svg viewBox="0 0 1520 800" role="img" aria-label="Arquitectura física cloud del EMPI">
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="8" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 z" fill="#455A64"/></marker>
+      <marker id="arrowD" markerWidth="10" markerHeight="8" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 z" fill="#7a8a99"/></marker>
+
+      <!-- ============ ÍCONOS DE SERVICIO (estilo arquitectura cloud) ============ -->
+      <!-- AWS API Gateway (networking · rosa) -->
+      <symbol id="ic-apigw" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#E7157B"/><g fill="#fff" stroke="#fff"><circle cx="10" cy="16" r="2.6" stroke="none"/><circle cx="22" cy="10" r="2.6" stroke="none"/><circle cx="22" cy="22" r="2.6" stroke="none"/><path d="M12,15 L20,11 M12,17 L20,21" stroke-width="1.6" fill="none"/></g></symbol>
+      <!-- AWS ECS/Fargate (compute · naranja) -->
+      <symbol id="ic-core" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#ED7100"/><path d="M16,6 L25,11 V21 L16,26 L7,21 V11 Z" fill="none" stroke="#fff" stroke-width="2"/><rect x="13" y="13" width="6" height="6" fill="#fff"/></symbol>
+      <!-- AWS OpenSearch (analytics · morado) -->
+      <symbol id="ic-search" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#8C4FFF"/><circle cx="14" cy="14" r="6" fill="none" stroke="#fff" stroke-width="2"/><line x1="18.5" y1="18.5" x2="24" y2="24" stroke="#fff" stroke-width="2.4"/></symbol>
+      <!-- AWS ElastiCache (database · violeta) -->
+      <symbol id="ic-cache" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#C925D1"/><g fill="#fff"><rect x="9" y="10" width="14" height="3" rx="1"/><rect x="9" y="15" width="14" height="3" rx="1"/><rect x="9" y="20" width="14" height="3" rx="1"/></g></symbol>
+      <!-- AWS RDS (database · azul) -->
+      <symbol id="ic-rds" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#2E27AD"/><path d="M9,11 C9,8.5 23,8.5 23,11 V21 C23,23.5 9,23.5 9,21 Z" fill="none" stroke="#fff" stroke-width="2"/><path d="M9,11 C9,13.5 23,13.5 23,11" fill="none" stroke="#fff" stroke-width="2"/></symbol>
+      <!-- AWS Portal/App (existente · naranja) -->
+      <symbol id="ic-portal" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#FF9900"/><rect x="8" y="9" width="16" height="14" rx="2" fill="none" stroke="#fff" stroke-width="2"/><path d="M8,13.5 H24" stroke="#fff" stroke-width="2"/><circle cx="11" cy="11.2" r="1" fill="#fff"/></symbol>
+
+      <!-- Azure APIM (azul) -->
+      <symbol id="ic-apim" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#0078D4"/><path d="M14,9 C11,9 11,16 8,16 C11,16 11,23 14,23 M18,9 C21,9 21,16 24,16 C21,16 21,23 18,23" fill="none" stroke="#fff" stroke-width="2"/></symbol>
+      <!-- Azure Functions (amarillo/azul) -->
+      <symbol id="ic-func" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#0B5CAB"/><path d="M18,5 L9,18 H15 L14,27 L23,13 H16 Z" fill="#FFD400"/></symbol>
+      <!-- Azure SQL (LIS) -->
+      <symbol id="ic-sql" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#0078D4"/><path d="M9,11 C9,8.5 23,8.5 23,11 V21 C23,23.5 9,23.5 9,21 Z" fill="none" stroke="#fff" stroke-width="2"/><path d="M9,11 C9,13.5 23,13.5 23,11" fill="none" stroke="#fff" stroke-width="2"/></symbol>
+      <!-- Azure Pagos (card) -->
+      <symbol id="ic-pay" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#0078D4"/><rect x="8" y="11" width="16" height="11" rx="2" fill="none" stroke="#fff" stroke-width="2"/><path d="M8,15 H24" stroke="#fff" stroke-width="2.4"/></symbol>
+
+      <!-- GCP Cloud Healthcare (cross) -->
+      <symbol id="ic-health" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#4285F4"/><path d="M14,7 H18 V13 H24 V17 H18 V23 H14 V17 H8 V13 H14 Z" fill="#fff"/></symbol>
+      <!-- GCP BigQuery (magnifier+bars) -->
+      <symbol id="ic-bq" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#4285F4"/><circle cx="14" cy="14" r="6.5" fill="none" stroke="#fff" stroke-width="2"/><g stroke="#fff" stroke-width="1.6"><line x1="11.5" y1="15.5" x2="11.5" y2="13"/><line x1="14" y1="15.5" x2="14" y2="11.5"/><line x1="16.5" y1="15.5" x2="16.5" y2="12.5"/></g><line x1="19" y1="19" x2="24" y2="24" stroke="#fff" stroke-width="2.4"/></symbol>
+      <!-- GCP Cloud Storage (bucket) -->
+      <symbol id="ic-gcs" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#4285F4"/><path d="M8,10 H24 L21.5,23 H10.5 Z" fill="none" stroke="#fff" stroke-width="2"/><circle cx="16" cy="16" r="1.6" fill="#fff"/></symbol>
+
+      <!-- Bus Kafka (nodos) -->
+      <symbol id="ic-kafka" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#F57F17"/><g fill="#fff"><circle cx="12" cy="11" r="2.4"/><circle cx="12" cy="21" r="2.4"/><circle cx="22" cy="16" r="2.4"/></g><path d="M12,11 L22,16 L12,21" fill="none" stroke="#fff" stroke-width="1.6"/></symbol>
+
+      <!-- On-prem HCE (db marrón) -->
+      <symbol id="ic-hce" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#5D4037"/><path d="M9,11 C9,8.5 23,8.5 23,11 V21 C23,23.5 9,23.5 9,21 Z" fill="none" stroke="#fff" stroke-width="2"/><path d="M9,11 C9,13.5 23,13.5 23,11 M9,16 C9,18.5 23,18.5 23,16" fill="none" stroke="#fff" stroke-width="1.6"/></symbol>
+      <!-- On-prem PACS (imagen) -->
+      <symbol id="ic-pacs" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#5D4037"/><rect x="7" y="9" width="18" height="14" rx="2" fill="none" stroke="#fff" stroke-width="2"/><circle cx="12" cy="14" r="1.7" fill="#fff"/><path d="M8,22 L14,16 L18,20 L21,17 L24,21" fill="none" stroke="#fff" stroke-width="1.6"/></symbol>
+      <!-- On-prem Admisión (form) -->
+      <symbol id="ic-adm" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#5D4037"/><rect x="8" y="7" width="16" height="18" rx="2" fill="none" stroke="#fff" stroke-width="2"/><path d="M11,12 H21 M11,16 H21 M11,20 H17" stroke="#fff" stroke-width="1.6"/></symbol>
+      <!-- ERP (invoice · morado) -->
+      <symbol id="ic-erp" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="6" fill="#6A1B9A"/><path d="M11,6 H21 V26 L18,24 L16,26 L14,24 L11,26 Z" fill="none" stroke="#fff" stroke-width="2"/><path d="M14,12 H18 M14,16 H18" stroke="#fff" stroke-width="1.6"/></symbol>
+
+      <style>
+        .hdr { font-weight:700; fill:#fff; }
+        .chip { rx:8; fill:#fff; stroke-width:1.4; }
+        .chipT { font-size:12.5px; fill:#1f2933; }
+        .chipS { font-size:10.5px; fill:#5b6b7a; }
+        .exist { fill:#eceff1; stroke:#90a4ae; stroke-dasharray:5 3; }
+        .conn { fill:none; stroke:#455A64; stroke-width:2; marker-end:url(#arrow); }
+        .connD { fill:none; stroke:#7a8a99; stroke-width:1.8; stroke-dasharray:6 4; marker-end:url(#arrowD); }
+        .lbl { font-size:11px; fill:#37474f; }
+        .lblbg { fill:#fbfcfe; opacity:0.92; }
+        .uname { font-size:12.5px; fill:#1f2933; font-weight:600; text-anchor:middle; }
+      </style>
+    </defs>
+
+    <!-- ===== USUARIOS izquierda (AWS) ===== -->
+    <g fill="#37474f">
+      <circle cx="120" cy="70" r="10"/><path d="M105,98 a15,17 0 0 1 30,0 z"/><text class="uname" x="120" y="122">Paciente</text>
+      <circle cx="285" cy="70" r="10"/><path d="M270,98 a15,17 0 0 1 30,0 z"/><text class="uname" x="285" y="122">Admisionista</text>
+      <circle cx="440" cy="70" r="10"/><path d="M425,98 a15,17 0 0 1 30,0 z"/><text class="uname" x="440" y="122">Operador de Datos</text>
+    </g>
+    <!-- ===== USUARIOS derecha (GCP) ===== -->
+    <g fill="#37474f">
+      <circle cx="1170" cy="62" r="10"/><path d="M1155,90 a15,17 0 0 1 30,0 z"/><text class="uname" x="1170" y="114">Médico</text>
+      <circle cx="1370" cy="62" r="10"/><path d="M1355,90 a15,17 0 0 1 30,0 z"/><text class="uname" x="1370" y="114">Radiólogo</text>
+    </g>
+
+    <!-- ===== AWS ===== -->
+    <rect x="40" y="170" width="430" height="340" rx="12" fill="#FFF6E9" stroke="#FF9900" stroke-width="2"/>
+    <rect x="40" y="170" width="430" height="42" rx="12" fill="#232F3E"/><rect x="40" y="192" width="430" height="20" fill="#232F3E"/>
+    <text x="60" y="197" class="hdr" font-size="15">aws</text><path d="M60,203 q13,6 26,0" stroke="#FF9900" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <text x="100" y="197" class="hdr" font-size="13" font-weight="600">AWS — Dominio del Paciente</text>
+
+    <rect class="chip exist" x="62" y="228" width="386" height="38"/><use href="#ic-portal" x="70" y="233" width="28" height="28"/>
+    <text class="chipT" x="106" y="251">Portal de Pacientes <tspan class="chipS">(existente · RDS)</tspan></text>
+
+    <rect class="chip" x="62" y="272" width="386" height="38" stroke="#E7157B"/><use href="#ic-apigw" x="70" y="277" width="28" height="28"/>
+    <text class="chipT" x="106" y="295">API Gateway + WAF <tspan class="chipS">· perímetro externo</tspan></text>
+
+    <rect class="chip" x="62" y="316" width="386" height="46" stroke="#ED7100" stroke-width="2"/><use href="#ic-core" x="70" y="323" width="30" height="30"/>
+    <text class="chipT" x="108" y="336" font-weight="700">EMPI Core / PatientAggregate</text><text class="chipS" x="108" y="352">ECS Fargate · commands + matcher tiempo real</text>
+
+    <rect class="chip" x="62" y="368" width="186" height="42" stroke="#8C4FFF"/><use href="#ic-search" x="70" y="374" width="28" height="28"/>
+    <text class="chipT" x="106" y="388">OpenSearch</text><text class="chipS" x="106" y="402">índice matching</text>
+
+    <rect class="chip" x="262" y="368" width="186" height="42" stroke="#C925D1"/><use href="#ic-cache" x="270" y="374" width="28" height="28"/>
+    <text class="chipT" x="306" y="388">ElastiCache</text><text class="chipS" x="306" y="402">cache identidad</text>
+
+    <rect class="chip" x="62" y="416" width="386" height="46" stroke="#2E27AD"/><use href="#ic-rds" x="70" y="423" width="30" height="30"/>
+    <text class="chipT" x="108" y="436" font-weight="700">Amazon RDS PostgreSQL</text><text class="chipS" x="108" y="452">Event Store (append-only) + Golden Record</text>
+
+    <!-- ===== BUS ===== -->
+    <rect x="545" y="452" width="430" height="58" rx="10" fill="#FFF8E1" stroke="#F57F17" stroke-width="2"/>
+    <use href="#ic-kafka" x="560" y="466" width="30" height="30"/>
+    <text x="770" y="476" text-anchor="middle" font-size="13" font-weight="700" fill="#8a5a00">Bus de eventos — Kafka neutral</text>
+    <text x="770" y="496" text-anchor="middle" font-size="11" fill="#8a5a00">Confluent Cloud (región AWS) · identity.patient.*</text>
+
+    <!-- ===== AZURE ===== -->
+    <rect x="545" y="170" width="430" height="250" rx="12" fill="#EAF3FB" stroke="#0078D4" stroke-width="2"/>
+    <rect x="545" y="170" width="430" height="42" rx="12" fill="#0078D4"/><rect x="545" y="192" width="430" height="20" fill="#0078D4"/>
+    <polygon points="577,204 590,180 596,180 585,204" fill="#fff"/><polygon points="590,180 606,204 592,204 588,197 599,197 595,190" fill="#8bd0ff"/>
+    <text x="616" y="197" class="hdr" font-size="13">Azure — Integración Clínica y Financiera</text>
+
+    <rect class="chip" x="567" y="228" width="386" height="36" stroke="#0078D4"/><use href="#ic-apim" x="574" y="232" width="28" height="28"/>
+    <text class="chipT" x="610" y="250">APIM <tspan class="chipS">· mTLS interno (sistemas internos)</tspan></text>
+
+    <rect class="chip" x="567" y="270" width="386" height="46" stroke="#0078D4" stroke-width="2"/><use href="#ic-func" x="574" y="277" width="30" height="30"/>
+    <text class="chipT" x="612" y="290" font-weight="700">Azure Functions — Adaptadores</text><text class="chipS" x="612" y="306">clínico (HCE HL7v2↔FHIR · LIS) + financiero (ERP · Pagos)</text>
+
+    <rect class="chip exist" x="567" y="322" width="186" height="38"/><use href="#ic-sql" x="574" y="327" width="28" height="28"/>
+    <text class="chipT" x="610" y="345">LIS <tspan class="chipS">(Azure SQL)</tspan></text>
+    <rect class="chip exist" x="767" y="322" width="186" height="38"/><use href="#ic-pay" x="774" y="327" width="28" height="28"/>
+    <text class="chipT" x="810" y="345">Portal Pagos</text>
+
+    <!-- ===== GCP ===== -->
+    <rect x="1050" y="170" width="430" height="340" rx="12" fill="#E9F3EA" stroke="#34A853" stroke-width="2"/>
+    <rect x="1050" y="170" width="430" height="42" rx="12" fill="#1A73E8"/><rect x="1050" y="192" width="430" height="20" fill="#1A73E8"/>
+    <circle cx="1074" cy="190" r="6" fill="#4285F4"/><circle cx="1084" cy="190" r="6" fill="#EA4335"/><circle cx="1079" cy="198" r="6" fill="#FBBC05"/><circle cx="1089" cy="198" r="6" fill="#34A853"/>
+    <text x="1108" y="197" class="hdr" font-size="13">GCP — Imágenes y Analítica</text>
+
+    <rect class="chip" x="1072" y="228" width="386" height="46" stroke="#4285F4" stroke-width="2"/><use href="#ic-health" x="1080" y="235" width="30" height="30"/>
+    <text class="chipT" x="1118" y="248" font-weight="700">Cloud Healthcare API</text><text class="chipS" x="1118" y="264">FHIR + DICOM · vincula PACS al EMPI-ID</text>
+
+    <rect class="chip" x="1072" y="280" width="386" height="46" stroke="#4285F4" stroke-width="2"/><use href="#ic-bq" x="1080" y="287" width="30" height="30"/>
+    <text class="chipT" x="1118" y="300" font-weight="700">BigQuery</text><text class="chipS" x="1118" y="316">Vista 360° + Batch matching (Splink)</text>
+
+    <rect class="chip exist" x="1072" y="332" width="386" height="38"/><use href="#ic-gcs" x="1080" y="337" width="28" height="28"/>
+    <text class="chipT" x="1116" y="355">PACS réplica <tspan class="chipS">(existente · Cloud Storage)</tspan></text>
+
+    <!-- ===== ON-PREM ===== -->
+    <rect x="40" y="588" width="940" height="168" rx="12" fill="#EFEBE9" stroke="#5D4037" stroke-width="2"/>
+    <rect x="40" y="588" width="940" height="40" rx="12" fill="#5D4037"/><rect x="40" y="608" width="940" height="20" fill="#5D4037"/>
+    <text x="60" y="614" class="hdr" font-size="13">🏥 On-premises — Centro de datos Lima</text>
+
+    <rect class="chip exist" x="62" y="648" width="280" height="88"/><use href="#ic-hce" x="76" y="662" width="34" height="34"/>
+    <text class="chipT" x="120" y="678" font-weight="700">HCE Oracle</text><text class="chipS" x="120" y="695">Historia clínica</text><text class="chipS" x="120" y="710">HL7 v2 · sin cambios</text>
+
+    <rect class="chip exist" x="360" y="648" width="280" height="88"/><use href="#ic-pacs" x="374" y="662" width="34" height="34"/>
+    <text class="chipT" x="418" y="678" font-weight="700">PACS local por sede</text><text class="chipS" x="418" y="695">Imágenes DICOM</text>
+
+    <rect class="chip exist" x="658" y="648" width="300" height="88"/><use href="#ic-adm" x="672" y="662" width="34" height="34"/>
+    <text class="chipT" x="716" y="678" font-weight="700">Admisión de sede</text><text class="chipS" x="716" y="695">módulos locales</text>
+
+    <!-- ===== NUBE PRIVADA (ERP) ===== -->
+    <rect x="1010" y="588" width="470" height="168" rx="12" fill="#F3E5F5" stroke="#6A1B9A" stroke-width="2"/>
+    <rect x="1010" y="588" width="470" height="40" rx="12" fill="#6A1B9A"/><rect x="1010" y="608" width="470" height="20" fill="#6A1B9A"/>
+    <text x="1030" y="614" class="hdr" font-size="13">🔒 Nube privada (proveedor local)</text>
+    <rect class="chip exist" x="1032" y="648" width="426" height="88"/><use href="#ic-erp" x="1046" y="662" width="34" height="34"/>
+    <text class="chipT" x="1090" y="678" font-weight="700">ERP Facturación</text><text class="chipS" x="1090" y="695">prestaciones · pólizas · cobros</text>
+
+    <!-- ===== CONEXIONES ===== -->
+    <path class="conn" d="M120,132 L120,228"/><rect class="lblbg" x="98" y="172" width="44" height="14"/><text class="lbl" x="102" y="183">HTTPS</text>
+    <path class="conn" d="M285,132 L285,272"/><rect class="lblbg" x="262" y="200" width="52" height="14"/><text class="lbl" x="266" y="211">admite</text>
+    <path class="conn" d="M440,132 L440,316"/><rect class="lblbg" x="398" y="210" width="94" height="14"/><text class="lbl" x="402" y="221">revisa fusiones</text>
+
+    <path class="conn" d="M1170,124 L1170,280"/><rect class="lblbg" x="1148" y="196" width="60" height="14"/><text class="lbl" x="1152" y="207">vista 360°</text>
+    <path class="conn" d="M1370,124 L1370,228"/><rect class="lblbg" x="1330" y="170" width="120" height="14"/><text class="lbl" x="1334" y="181">imágenes inter-sede</text>
+
+    <path class="conn" d="M470,481 L545,481"/><rect class="lblbg" x="472" y="464" width="66" height="14"/><text class="lbl" x="476" y="475">publica</text>
+    <path class="conn" d="M770,452 L770,420"/>
+    <path class="conn" d="M975,481 L1050,481"/><rect class="lblbg" x="978" y="464" width="70" height="14"/><text class="lbl" x="982" y="475">consume</text>
+
+    <path class="conn" d="M560,420 L560,548 L200,548 L200,648"/><rect class="lblbg" x="300" y="538" width="150" height="14"/><text class="lbl" x="304" y="549">ExpressRoute · HL7 v2</text>
+    <path class="conn" d="M953,400 L1010,400 L1010,566 L1245,566 L1245,588"/><rect class="lblbg" x="1050" y="556" width="106" height="14"/><text class="lbl" x="1054" y="567">EMPI-ID (ERP)</text>
+    <path class="conn" d="M1050,300 L1000,300 L1000,576 L500,576 L500,648"/><rect class="lblbg" x="640" y="566" width="128" height="14"/><text class="lbl" x="644" y="577">DICOM · EMPI-ID</text>
+
+    <path class="connD" d="M470,439 L512,439 L512,150 L1265,150 L1265,280"/><rect class="lblbg" x="800" y="142" width="152" height="14"/><text class="lbl" x="804" y="153">datos de identidad (async)</text>
+  </svg>
+
+  <div class="legend">
+    <span><span class="sw" style="background:#232F3E"></span><b>AWS</b> — paciente</span>
+    <span><span class="sw" style="background:#0078D4"></span><b>Azure</b> — clínico / financiero</span>
+    <span><span class="sw" style="background:#1A73E8"></span><b>GCP</b> — imágenes / analítica</span>
+    <span><span class="sw" style="background:#F57F17"></span><b>Bus neutral</b> (Kafka)</span>
+    <span><span class="sw" style="background:#5D4037"></span><b>On-premises</b> Lima</span>
+    <span><span class="sw" style="background:#6A1B9A"></span><b>Nube privada</b> (ERP)</span>
+    <span><span class="sw" style="background:#eceff1;border:1.4px dashed #90a4ae"></span>Sistema <b>existente</b></span>
+    <span>— red/flujo · - - - async (datos)</span>
+  </div>
+</div>
+</body>
+</html>

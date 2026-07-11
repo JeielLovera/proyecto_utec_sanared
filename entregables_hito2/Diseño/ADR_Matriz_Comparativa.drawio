@@ -1,0 +1,217 @@
+<mxfile host="app.diagrams.net" agent="Claude">
+  <diagram id="matriz-comparativa" name="Matriz Comparativa - 3 Alternativas Finales">
+    <mxGraphModel dx="2828" dy="1570" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1390" pageHeight="1634" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c1001" parent="1" style="text;html=1;fontSize=16;fontStyle=1;align=left;verticalAlign=middle;" value="Matriz Comparativa de Decisiones Arquitectonicas - EMPI SanaRed" vertex="1">
+          <mxGeometry height="36" width="1310" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="c1002" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1168bd;strokeColor=#0b4a86;strokeWidth=1;fontColor=#ffffff;fontStyle=1;fontSize=11;align=center;verticalAlign=middle;" value="Dimension" vertex="1">
+          <mxGeometry height="50" width="230" x="40" y="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c1003" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1168bd;strokeColor=#0b4a86;strokeWidth=1;fontColor=#ffffff;fontStyle=1;fontSize=11;align=center;verticalAlign=middle;" value="Alt. 1 - Centralizada (AWS)" vertex="1">
+          <mxGeometry height="50" width="350" x="270" y="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c1004" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1168bd;strokeColor=#0b4a86;strokeWidth=1;fontColor=#ffffff;fontStyle=1;fontSize=11;align=center;verticalAlign=middle;" value="Alt. 2 - Federada DDD (Azure)" vertex="1">
+          <mxGeometry height="50" width="350" x="620" y="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c1005" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#2f6f4f;strokeColor=#0b4a86;strokeWidth=1;fontColor=#ffffff;fontStyle=1;fontSize=11;align=center;verticalAlign=middle;" value="Alt. 3 - DDD Consolidado (Dual-Cloud)" vertex="1">
+          <mxGeometry height="50" width="380" x="970" y="86" as="geometry" />
+        </mxCell>
+        <mxCell id="c1006" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Cloud primario" vertex="1">
+          <mxGeometry height="70" width="230" x="40" y="136" as="geometry" />
+        </mxCell>
+        <mxCell id="c1007" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="AWS (ADR-A1-001)" vertex="1">
+          <mxGeometry height="70" width="350" x="270" y="136" as="geometry" />
+        </mxCell>
+        <mxCell id="c1008" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Azure (ADR-A2-001)" vertex="1">
+          <mxGeometry height="70" width="350" x="620" y="136" as="geometry" />
+        </mxCell>
+        <mxCell id="c1009" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Dual: AWS perimetro externo + Azure motor de dominio (ADR-A3-003)" vertex="1">
+          <mxGeometry height="70" width="380" x="970" y="136" as="geometry" />
+        </mxCell>
+        <mxCell id="c1010" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Persistencia principal" vertex="1">
+          <mxGeometry height="90" width="230" x="40" y="206" as="geometry" />
+        </mxCell>
+        <mxCell id="c1011" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Aurora PostgreSQL Multi-AZ, tabla relacional mutable (ADR-A1-002)" vertex="1">
+          <mxGeometry height="90" width="350" x="270" y="206" as="geometry" />
+        </mxCell>
+        <mxCell id="c1012" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Cosmos DB, Event Store con Change Feed (ADR-A2-002)" vertex="1">
+          <mxGeometry height="90" width="350" x="620" y="206" as="geometry" />
+        </mxCell>
+        <mxCell id="c1013" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Cosmos DB, Event Store completo - mismo modelo que la Alt.2, sin concesiones (ADR-A3-001)" vertex="1">
+          <mxGeometry height="90" width="380" x="970" y="206" as="geometry" />
+        </mxCell>
+        <mxCell id="c1014" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Perimetro / Gateway" vertex="1">
+          <mxGeometry height="90" width="230" x="40" y="296" as="geometry" />
+        </mxCell>
+        <mxCell id="c1015" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="AWS API Gateway unico, JWT (ADR-A1-003)" vertex="1">
+          <mxGeometry height="90" width="350" x="270" y="296" as="geometry" />
+        </mxCell>
+        <mxCell id="c1016" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Azure APIM unico, mTLS + OAuth2 (ADR-A2-003)" vertex="1">
+          <mxGeometry height="90" width="350" x="620" y="296" as="geometry" />
+        </mxCell>
+        <mxCell id="c1017" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Gateway dual: AWS API GW (WAF, externo) + Azure APIM (mTLS, interno) (ADR-A3-003)" vertex="1">
+          <mxGeometry height="90" width="380" x="970" y="296" as="geometry" />
+        </mxCell>
+        <mxCell id="c1018" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Cache de latencia en admision" vertex="1">
+          <mxGeometry height="90" width="230" x="40" y="386" as="geometry" />
+        </mxCell>
+        <mxCell id="c1019" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="ElastiCache Redis, TTL 5 min (ADR-A1-004)" vertex="1">
+          <mxGeometry height="90" width="350" x="270" y="386" as="geometry" />
+        </mxCell>
+        <mxCell id="c1020" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Sin cache: el matching en tiempo real siempre consulta Elasticsearch (~200 ms)" vertex="1">
+          <mxGeometry height="90" width="350" x="620" y="386" as="geometry" />
+        </mxCell>
+        <mxCell id="c1021" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="ElastiCache Redis con write-through, incorporado de la Alt.1 (ADR-A3-002)" vertex="1">
+          <mxGeometry height="90" width="380" x="970" y="386" as="geometry" />
+        </mxCell>
+        <mxCell id="c1022" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Bus de integracion / eventos" vertex="1">
+          <mxGeometry height="90" width="230" x="40" y="476" as="geometry" />
+        </mxCell>
+        <mxCell id="c1023" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="EventBridge + SQS (ADR-A1-005)" vertex="1">
+          <mxGeometry height="90" width="350" x="270" y="476" as="geometry" />
+        </mxCell>
+        <mxCell id="c1024" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Azure Service Bus con topics semanticos (ADR-A2-007)" vertex="1">
+          <mxGeometry height="90" width="350" x="620" y="476" as="geometry" />
+        </mxCell>
+        <mxCell id="c1025" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Cosmos Change Feed -&gt; Service Bus -&gt; SQS DLQ por sistema (ADR-A3-001, seccion 2.7)" vertex="1">
+          <mxGeometry height="90" width="380" x="970" y="476" as="geometry" />
+        </mxCell>
+        <mxCell id="c1026" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Batch de deduplicacion" vertex="1">
+          <mxGeometry height="90" width="230" x="40" y="566" as="geometry" />
+        </mxCell>
+        <mxCell id="c1027" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="AWS Step Functions, secuencial (ADR-A1-006)" vertex="1">
+          <mxGeometry height="90" width="350" x="270" y="566" as="geometry" />
+        </mxCell>
+        <mxCell id="c1028" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Azure Databricks, paralelo distribuido, sin orquestador de checkpointing (ADR-A2-005)" vertex="1">
+          <mxGeometry height="90" width="350" x="620" y="566" as="geometry" />
+        </mxCell>
+        <mxCell id="c1029" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Step Functions orquesta (checkpointing) + Databricks computa (paralelismo) (ADR-A3-004)" vertex="1">
+          <mxGeometry height="90" width="380" x="970" y="566" as="geometry" />
+        </mxCell>
+        <mxCell id="c1030" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="RBAC / Autenticacion" vertex="1">
+          <mxGeometry height="70" width="230" x="40" y="656" as="geometry" />
+        </mxCell>
+        <mxCell id="c1031" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="JWT + SSO federado (ADR-A1-007)" vertex="1">
+          <mxGeometry height="70" width="350" x="270" y="656" as="geometry" />
+        </mxCell>
+        <mxCell id="c1032" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="mTLS (interno) + OAuth2 (externo), sin MFA explicito" vertex="1">
+          <mxGeometry height="70" width="350" x="620" y="656" as="geometry" />
+        </mxCell>
+        <mxCell id="c1033" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="JWT + SSO federado + MFA obligatorio para escritura (ADR-A3-007)" vertex="1">
+          <mxGeometry height="70" width="380" x="970" y="656" as="geometry" />
+        </mxCell>
+        <mxCell id="c1034" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Modelo de auditoria" vertex="1">
+          <mxGeometry height="90" width="230" x="40" y="726" as="geometry" />
+        </mxCell>
+        <mxCell id="c1035" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Log secundario en CloudWatch, escrito despues de la transaccion (ADR-A1-008)" vertex="1">
+          <mxGeometry height="90" width="350" x="270" y="726" as="geometry" />
+        </mxCell>
+        <mxCell id="c1036" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Nativo: el Event Store ES el audit log (ADR-A2-006)" vertex="1">
+          <mxGeometry height="90" width="350" x="620" y="726" as="geometry" />
+        </mxCell>
+        <mxCell id="c1037" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Nativo + correlation_id end-to-end, trazando el request HTTP original (ADR-A3-008)" vertex="1">
+          <mxGeometry height="90" width="380" x="970" y="726" as="geometry" />
+        </mxCell>
+        <mxCell id="c1038" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Reversion de una fusion incorrecta" vertex="1">
+          <mxGeometry height="90" width="230" x="40" y="816" as="geometry" />
+        </mxCell>
+        <mxCell id="c1039" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="UPDATE sobre el registro + log de reversion" vertex="1">
+          <mxGeometry height="90" width="350" x="270" y="816" as="geometry" />
+        </mxCell>
+        <mxCell id="c1040" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Evento MergeReverted append-only, implicito del Event Sourcing" vertex="1">
+          <mxGeometry height="90" width="350" x="620" y="816" as="geometry" />
+        </mxCell>
+        <mxCell id="c1041" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Evento MergeReverted + RevertMerge como Command explicito de primera clase" vertex="1">
+          <mxGeometry height="90" width="380" x="970" y="816" as="geometry" />
+        </mxCell>
+        <mxCell id="c1042" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Interoperabilidad HL7 v2 (Fase 1)" vertex="1">
+          <mxGeometry height="70" width="230" x="40" y="906" as="geometry" />
+        </mxCell>
+        <mxCell id="c1043" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Lambda transformadora FHIR a HL7v2 (ADR-A1-009)" vertex="1">
+          <mxGeometry height="70" width="350" x="270" y="906" as="geometry" />
+        </mxCell>
+        <mxCell id="c1044" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Adaptador suscrito al Service Bus (ADR-A2-009)" vertex="1">
+          <mxGeometry height="70" width="350" x="620" y="906" as="geometry" />
+        </mxCell>
+        <mxCell id="c1045" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Lambda transformadora con cola dedicada queue-hce (ADR-A3-005)" vertex="1">
+          <mxGeometry height="70" width="380" x="970" y="906" as="geometry" />
+        </mxCell>
+        <mxCell id="c1046" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Retencion de datos / Ley 29733" vertex="1">
+          <mxGeometry height="110" width="230" x="40" y="976" as="geometry" />
+        </mxCell>
+        <mxCell id="c1047" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Cifrado + S3 Glacier a los 12 meses, 10 anios (ADR-A1-010)" vertex="1">
+          <mxGeometry height="110" width="350" x="270" y="976" as="geometry" />
+        </mxCell>
+        <mxCell id="c1048" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Cifrado AES-256 + Azure Blob Cool Tier, 10 anios (ADR-A2-010)" vertex="1">
+          <mxGeometry height="110" width="350" x="620" y="976" as="geometry" />
+        </mxCell>
+        <mxCell id="c1049" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Cubierto dentro del Event Store (ADR-A3-001/008); prioriza Versionado de API (ADR-A3-009) y Modo degradado offline (ADR-A3-010)" vertex="1">
+          <mxGeometry height="110" width="380" x="970" y="976" as="geometry" />
+        </mxCell>
+        <mxCell id="c1050" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Resiliencia ante caida de sede" vertex="1">
+          <mxGeometry height="90" width="230" x="40" y="1086" as="geometry" />
+        </mxCell>
+        <mxCell id="c1051" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Modo cache offline mencionado como consecuencia (RNF-02.3), sin ADR propio" vertex="1">
+          <mxGeometry height="90" width="350" x="270" y="1086" as="geometry" />
+        </mxCell>
+        <mxCell id="c1052" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="No abordado explicitamente" vertex="1">
+          <mxGeometry height="90" width="350" x="620" y="1086" as="geometry" />
+        </mxCell>
+        <mxCell id="c1053" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Modo cache-offline automatico con TTL 24h, motivado por incidente real de feb-2024 (ADR-A3-010)" vertex="1">
+          <mxGeometry height="90" width="380" x="970" y="1086" as="geometry" />
+        </mxCell>
+        <mxCell id="c1054" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Complejidad de implementacion" vertex="1">
+          <mxGeometry height="70" width="230" x="40" y="1176" as="geometry" />
+        </mxCell>
+        <mxCell id="c1055" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Media" vertex="1">
+          <mxGeometry height="70" width="350" x="270" y="1176" as="geometry" />
+        </mxCell>
+        <mxCell id="c1056" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Alta (DDD + CQRS + Event Sourcing son avanzados para el equipo)" vertex="1">
+          <mxGeometry height="70" width="350" x="620" y="1176" as="geometry" />
+        </mxCell>
+        <mxCell id="c1057" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Alta - justificada por los beneficios combinados a largo plazo" vertex="1">
+          <mxGeometry height="70" width="380" x="970" y="1176" as="geometry" />
+        </mxCell>
+        <mxCell id="c1058" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Tiempo estimado Fase 1" vertex="1">
+          <mxGeometry height="70" width="230" x="40" y="1246" as="geometry" />
+        </mxCell>
+        <mxCell id="c1059" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="3-4 meses" vertex="1">
+          <mxGeometry height="70" width="350" x="270" y="1246" as="geometry" />
+        </mxCell>
+        <mxCell id="c1060" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="5-6 meses" vertex="1">
+          <mxGeometry height="70" width="350" x="620" y="1246" as="geometry" />
+        </mxCell>
+        <mxCell id="c1061" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="4-5 meses" vertex="1">
+          <mxGeometry height="70" width="380" x="970" y="1246" as="geometry" />
+        </mxCell>
+        <mxCell id="c1062" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Escalabilidad a largo plazo" vertex="1">
+          <mxGeometry height="70" width="230" x="40" y="1316" as="geometry" />
+        </mxCell>
+        <mxCell id="c1063" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Buena (con sharding manual)" vertex="1">
+          <mxGeometry height="70" width="350" x="270" y="1316" as="geometry" />
+        </mxCell>
+        <mxCell id="c1064" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f8fc;strokeColor=#b0c4de;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Excelente (proyecciones escalan independientemente)" vertex="1">
+          <mxGeometry height="70" width="350" x="620" y="1316" as="geometry" />
+        </mxCell>
+        <mxCell id="c1065" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=middle;spacing=6;" value="Excelente desde Fase 1" vertex="1">
+          <mxGeometry height="70" width="380" x="970" y="1316" as="geometry" />
+        </mxCell>
+        <mxCell id="c1066" parent="1" style="text;html=1;fontSize=13;fontStyle=1;align=left;verticalAlign=middle;" value="Lectura rapida para la presentacion" vertex="1">
+          <mxGeometry height="26" width="1310" x="40" y="1506" as="geometry" />
+        </mxCell>
+        <mxCell id="c1067" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;verticalAlign=middle;spacing=8;" value="Alt. 1: la mas simple de implementar, menor curva de aprendizaje, pero concentra lectura y escritura en una sola BD y su auditoria depende de un log secundario." vertex="1">
+          <mxGeometry height="40" width="1310" x="40" y="1536" as="geometry" />
+        </mxCell>
+        <mxCell id="c1068" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;verticalAlign=middle;spacing=8;" value="Alt. 2: resuelve trazabilidad y escalabilidad de lectura con Event Sourcing + CQRS, pero sin cache (sin latencia garantizada) ni blindaje especifico de WAF para trafico externo." vertex="1">
+          <mxGeometry height="40" width="1310" x="40" y="1582" as="geometry" />
+        </mxCell>
+        <mxCell id="c1069" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;verticalAlign=middle;spacing=8;" value="Alt. 3: parte del nucleo de dominio de la Alt. 2 (sin concesiones) e incorpora las tres capacidades operativas que la Alt. 1 resuelve mejor -- cache, batch con checkpointing y WAF -- quedando como la evolucion de ambas." vertex="1">
+          <mxGeometry height="40" width="1310" x="40" y="1628" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

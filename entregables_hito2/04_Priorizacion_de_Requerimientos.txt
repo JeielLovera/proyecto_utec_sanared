@@ -1,0 +1,302 @@
+================================================================================
+PRIORIZACION DE REQUERIMIENTOS
+Iniciativa: Identidad Unificada de Pacientes (EMPI)
+Proyectos: INI-01 / INI-13 | Clinica SanaRed Integrada
+================================================================================
+
+METODOLOGIA DE PRIORIZACION
+-----------------------------
+Se utiliza el modelo MoSCoW combinado con el impacto en los objetivos estrategicos
+de SanaRed y el nivel de riesgo tecnico identificado en el Anexo de Riesgos.
+
+Criterios de puntuacion aplicados:
+  - Impacto clinico: riesgo de seguridad del paciente si el requerimiento falla.
+  - Impacto operativo: afecta flujos de atencion, admision o facturacion en curso.
+  - Impacto regulatorio: riesgo de incumplimiento legal (Ley 29733).
+  - Urgencia: depende de otro requerimiento o bloquea el avance del proyecto.
+  - Complejidad tecnica: nivel de esfuerzo de implementacion (A=Alto, M=Medio, B=Bajo).
+
+Clasificacion MoSCoW:
+  MUST   : Obligatorio. Sin este el sistema no puede operar ni ir a produccion.
+  SHOULD : Importante. Agrega valor critico; debe incluirse en v1 si es posible.
+  COULD  : Deseable. Incluir si hay capacidad; puede diferirse a v1.1.
+  WON'T  : Fuera del alcance de esta fase. Se revisa en Hito 3.
+
+================================================================================
+TABLA DE PRIORIZACION - REQUERIMIENTOS FUNCIONALES
+================================================================================
+
++--------+--------------------------------------------------+--------+----------+---------+-----------+----------+
+| ID     | Requerimiento                                    | MoSCoW | Impacto  | Impacto | Impacto   | Comple-  |
+|        |                                                  |        | Clinico  | Operat. | Regulat.  | jidad    |
++--------+--------------------------------------------------+--------+----------+---------+-----------+----------+
+| RF-01  | Creacion de EMPI-ID unico (Golden Record)        | MUST   | ALTO     | ALTO    | ALTO      | MEDIA    |
+| RF-02  | Matching y Deduplicacion Batch (INI-01)          | MUST   | ALTO     | ALTO    | ALTO      | ALTA     |
+| RF-03  | Matching en Tiempo Real - Golden Record 360      | MUST   | ALTO     | ALTO    | ALTO      | ALTA     |
+| RF-04  | Integracion con sistemas fuente                  | MUST   | ALTO     | ALTO    | MEDIO     | ALTA     |
+| RF-05  | Busqueda y consulta del Golden Record            | MUST   | ALTO     | ALTO    | BAJO      | MEDIA    |
+| RF-06  | Gestion del ciclo de vida de la identidad        | SHOULD | MEDIO    | ALTO    | ALTO      | MEDIA    |
+| RF-07  | Gobierno y calidad del dato maestro              | SHOULD | MEDIO    | MEDIO   | ALTO      | MEDIA    |
++--------+--------------------------------------------------+--------+----------+---------+-----------+----------+
+
+
+DETALLE DE PRIORIZACION - REQUERIMIENTOS FUNCIONALES
+-----------------------------------------------------
+
+PRIORIDAD 1 - MUST (Bloquean el go-live si no se implementan)
+=============================================================
+
+RF-01 | Creacion de Golden Record
+  MoSCoW    : MUST
+  Puntaje   : 9/10
+  Justificacion:
+    Es el cimiento de toda la iniciativa EMPI. Sin la generacion de un EMPI-ID
+    unico, ninguna otra capacidad (matching, deduplicacion, vista longitudinal)
+    puede funcionar. Directamente vinculado al objetivo estrategico OE-3
+    (reducir 80% de duplicados) y OE-2 (vista longitudinal para 90% de pacientes).
+    Impacto clinico critico: el caso del paciente anticoagulado con dos historias
+    demuestra que la falta de identidad unica pone en riesgo la seguridad del paciente.
+  Proyecto  : INI-01 (base) / INI-13 (evolucion)
+  Fase      : Fase 1 - Q1 2025
+
+RF-02 | Matching y Deduplicacion Batch
+  MoSCoW    : MUST
+  Puntaje   : 9/10
+  Justificacion:
+    Los 126,000 registros duplicados ya identificados son un problema activo que
+    afecta admision, facturacion y continuidad clinica HOY. El batch es el
+    mecanismo para resolver el problema heredado antes de que el matching en tiempo
+    real pueda ser efectivo. Sin esta limpieza inicial, el indice maestro arranca
+    contaminado. Alineado con OE-3 y con el Riesgo #2 del Anexo (Integridad).
+  Proyecto  : INI-01
+  Fase      : Fase 1 - Q1 2025 (paralelo a RF-01)
+  Dependencia: RF-01 debe estar funcional antes de ejecutar el primer batch completo.
+
+RF-03 | Matching en Tiempo Real (INI-13)
+  MoSCoW    : MUST
+  Puntaje   : 8/10
+  Justificacion:
+    Previene la generacion de NUEVOS duplicados desde el dia de go-live. Si se
+    implementa RF-01 y RF-02 pero no RF-03, el sistema limpia el problema pasado
+    pero no detiene la generacion de duplicados futuros. Impacto directo en el
+    tiempo de espera en admision (OE-1: reducir de 52 a 25 min) ya que la
+    validacion de identidad en tiempo real acelera la admision.
+  Proyecto  : INI-13
+  Fase      : Fase 1-2 - Q1-Q2 2025
+  Dependencia: RF-01 y RF-02 deben estar en produccion.
+
+RF-04 | Integracion con sistemas fuente
+  MoSCoW    : MUST
+  Puntaje   : 8/10
+  Justificacion:
+    Sin integracion con Portal AWS, Agenda SaaS, HCE Oracle y admisiones locales,
+    el EMPI opera en el vacio. La integracion es el mecanismo por el que el EMPI
+    recibe datos y propaga el Golden Record. El Riesgo #2 del Anexo identifica
+    explicitamente la falta de sincronizacion como causa de continuidad asistencial
+    incompleta. Complejidad alta por la heterogeneidad del ecosistema multinube.
+  Proyecto  : INI-01 / INI-02 (API Gateway)
+  Fase      : Fase 1-2 - Q1-Q2 2025
+  Nota      : La integracion con todos los sistemas puede desplegarse incrementalmente:
+              primero Portal + Agenda + Admision (mayor volumen), luego HCE + CRM + LIS.
+
+RF-05 | Busqueda y consulta del Golden Record
+  MoSCoW    : MUST
+  Puntaje   : 8/10
+  Justificacion:
+    Es la interfaz de consumo del EMPI para medicos y admisionistas. Sin capacidad
+    de busqueda eficiente, el Golden Record existe pero no es accesible en el flujo
+    de atencion. Directamente relacionado con OE-2 (vista longitudinal) y con la
+    reduccion del tiempo de espera (OE-1).
+  Proyecto  : INI-13
+  Fase      : Fase 1 - Q1 2025
+  Dependencia: RF-01.
+
+
+PRIORIDAD 2 - SHOULD (No bloquean go-live pero deben estar en v1)
+=================================================================
+
+RF-06 | Gestion del ciclo de vida de la identidad
+  MoSCoW    : SHOULD
+  Puntaje   : 7/10
+  Justificacion:
+    La inactivacion, reversion y gestion de fallecimiento son necesarias para
+    mantener la calidad del indice a lo largo del tiempo. Sin estas capacidades,
+    el EMPI puede ir a produccion con las funciones principales, pero el
+    deterioro del dato es inevitable en semanas. Se recomienda incluir en v1
+    al menos la inactivacion post-fusion y el manejo de fallecimiento.
+    La reversion completa puede diferirse a v1.1 si hay restriccion de tiempo.
+  Proyecto  : INI-13
+  Fase      : Fase 2 - Q2 2025
+
+RF-07 | Gobierno y calidad del dato maestro
+  MoSCoW    : SHOULD
+  Puntaje   : 6/10
+  Justificacion:
+    Los reportes de calidad y las alertas por tasa de duplicados son esenciales
+    para sostener la iniciativa en el tiempo, pero no bloquean las operaciones
+    clinicas del primer dia. Permite al equipo de Gobierno de Datos monitorear la
+    salud del EMPI post go-live. Alineado con el objetivo de gobierno de datos
+    del plan de migracion (INI-06c).
+  Proyecto  : INI-06a / INI-06c
+  Fase      : Fase 2-3 - Q2-Q3 2025
+
+
+================================================================================
+TABLA DE PRIORIZACION - REQUERIMIENTOS NO FUNCIONALES
+================================================================================
+
++--------+--------------------------------------------------+--------+----------+---------+----------+
+| ID     | Requerimiento                                    | MoSCoW | Impacto  | Riesgo  | Comple-  |
+|        |                                                  |        | Operativo| Tecnico | jidad    |
++--------+--------------------------------------------------+--------+----------+---------+----------+
+| RNF-01 | Latencia API <= 500 ms (P95) tiempo real         | MUST   | ALTO     | ALTO    | MEDIA    |
+| RNF-02 | Disponibilidad 99.9% y modo degradado offline    | MUST   | ALTO     | ALTO    | ALTA     |
+| RNF-03 | RBAC, SSO/MFA, cifrado y auditoria               | MUST   | ALTO     | ALTO    | ALTA     |
+| RNF-04 | Interoperabilidad FHIR R4 / HL7 v2               | MUST   | ALTO     | MEDIO   | ALTA     |
+| RNF-05 | Escalabilidad ante picos de demanda              | SHOULD | ALTO     | ALTO    | MEDIA    |
+| RNF-06 | Observabilidad y configurabilidad de reglas      | SHOULD | MEDIO    | MEDIO   | MEDIA    |
+| RNF-07 | Cumplimiento Ley 29733 y retencion de datos      | MUST   | BAJO     | ALTO    | MEDIA    |
++--------+--------------------------------------------------+--------+----------+---------+----------+
+
+
+DETALLE DE PRIORIZACION - REQUERIMIENTOS NO FUNCIONALES
+--------------------------------------------------------
+
+RNF-01 | Latencia de API en tiempo real
+  MoSCoW    : MUST
+  Puntaje   : 9/10
+  Justificacion:
+    La admision de urgencias atiende 780 pacientes diarios. Una latencia alta
+    impacta directamente el tiempo de espera, que ya es de 52 minutos (meta: 25 min).
+    Un servicio EMPI lento se convierte en un cuello de botella peor que el
+    problema de duplicados que intenta resolver.
+
+RNF-02 | Disponibilidad y resiliencia
+  MoSCoW    : MUST
+  Puntaje   : 9/10
+  Justificacion:
+    SanaRed ya experimento caidas que afectaron a 12,000 pacientes en una sola
+    ocasion. El EMPI es una dependencia de todos los canales digitales. Su caida
+    equivale a la caida de toda la red de identidad. El modo degradado offline
+    es critico para sedes con conectividad variable (ya documentado en el caso).
+
+RNF-03 | Seguridad (RBAC, SSO, cifrado, auditoria)
+  MoSCoW    : MUST
+  Puntaje   : 9/10
+  Justificacion:
+    Es el Riesgo #1 del Anexo Tecnico. La concentracion de identidades en el EMPI
+    lo convierte en el activo mas sensible de la organizacion. Un acceso indebido
+    al EMPI compromete la privacidad de todos los pacientes de la red simultaneamente.
+    El incumplimiento de la Ley 29733 tiene consecuencias legales directas.
+
+RNF-04 | Interoperabilidad FHIR R4 / HL7 v2
+  MoSCoW    : MUST
+  Puntaje   : 8/10
+  Justificacion:
+    La arquitectura objetivo del Value Stream define explicitamente FHIR como
+    estandar de interoperabilidad. Sin esto, las integraciones con HCE, LIS y
+    futuros sistemas son integraciones propietarias costosas de mantener.
+    La compatibilidad HL7 v2 es obligatoria durante la transicion para no
+    interrumpir el servicio del integrador existente.
+
+RNF-05 | Escalabilidad ante picos de campana
+  MoSCoW    : SHOULD
+  Puntaje   : 7/10
+  Justificacion:
+    El caso documenta que en campanas el volumen de citas se duplica y los
+    sistemas han fallado (18,000 citas cargadas por lote con falla de sincronizacion).
+    El escalamiento automatico es SHOULD porque puede implementarse en la primera
+    evolucion post go-live, pero debe estar antes de la primera campana corporativa.
+
+RNF-06 | Observabilidad y configurabilidad
+  MoSCoW    : SHOULD
+  Puntaje   : 6/10
+  Justificacion:
+    Critico para la operacion sostenible pero puede ir en una segunda iteracion.
+    Sin observabilidad, los problemas del EMPI se detectaran reactivamente
+    (como ocurre hoy con el integrador HL7).
+
+RNF-07 | Cumplimiento normativo Ley 29733
+  MoSCoW    : MUST
+  Puntaje   : 8/10
+  Justificacion:
+    No es negociable desde el punto de vista legal. La concentracion de datos
+    personales sensibles en el EMPI eleva el perfil de riesgo regulatorio.
+    La evaluacion de impacto en privacidad (PIA) debe completarse antes del go-live.
+
+
+================================================================================
+ROADMAP DE IMPLEMENTACION POR PRIORIDAD
+================================================================================
+
+  FASE 1 - Fundamentos del EMPI (Q1 2025 | INI-01 base)
+  -------------------------------------------------------
+  Objetivo: Tener el EMPI operativo con las capacidades minimas indispensables.
+
+    1. RF-01  - Creacion de Golden Record y generacion de EMPI-ID         [MUST]
+    2. RF-05  - Busqueda y consulta basica del Golden Record               [MUST]
+    3. RF-04  - Integracion inicial: Portal AWS + Agenda SaaS + Admision   [MUST]
+    4. RNF-03 - RBAC + cifrado + auditoria basica                         [MUST]
+    5. RNF-04 - Soporte HL7 v2 para integracion del integrador existente  [MUST]
+    6. RNF-07 - PIA completada y controles de Ley 29733 implementados     [MUST]
+
+  Hito de fase 1: EMPI operativo con integracion parcial (3 sistemas fuente).
+                  Nuevos pacientes registrados desde el dia de go-live no generan
+                  duplicados en los canales integrados.
+
+  FASE 2 - Deduplicacion y Matching (Q1-Q2 2025 | INI-01 completo)
+  -----------------------------------------------------------------
+  Objetivo: Resolver el inventario de 126,000 duplicados existentes.
+
+    1. RF-02  - Matching y deduplicacion batch completo                   [MUST]
+    2. RF-04  - Integracion completa: HCE Oracle + CRM + LIS Azure        [MUST]
+    3. RNF-01 - Optimizacion de latencia API bajo carga completa          [MUST]
+    4. RNF-02 - Disponibilidad 99.9% + modo degradado offline             [MUST]
+    5. RF-06  - Inactivacion y ciclo de vida basico del Golden Record     [SHOULD]
+
+  Hito de fase 2: Tasa de duplicados reducida en >= 60%.
+                  Integracion completa con los 5 sistemas fuente principales.
+
+  FASE 3 - Golden Record 360 en Tiempo Real (Q2-Q3 2025 | INI-13)
+  ---------------------------------------------------------------
+  Objetivo: Matching en tiempo real y vista longitudinal completa.
+
+    1. RF-03  - Matching en tiempo real y Golden Record 360               [MUST]
+    2. RF-06  - Ciclo de vida completo (reversion, fallecimiento)         [SHOULD]
+    3. RF-07  - Gobierno y calidad del dato (dashboard + alertas)         [SHOULD]
+    4. RNF-05 - Escalabilidad automatica ante picos de campana            [SHOULD]
+    5. RNF-06 - Observabilidad completa del EMPI                         [SHOULD]
+
+  Hito de fase 3: Cero nuevos duplicados generados desde cualquier canal.
+                  Vista longitudinal 360 disponible para >= 90% de pacientes
+                  activos. INI-13 completado.
+
+
+================================================================================
+RESUMEN EJECUTIVO DE PRIORIZACION
+================================================================================
+
+  Total de requerimientos funcionales  : 7
+    - MUST   : 5  (RF-01, RF-02, RF-03, RF-04, RF-05)
+    - SHOULD : 2  (RF-06, RF-07)
+    - COULD  : 0
+    - WON'T  : 0 (scope definido correctamente para esta fase)
+
+  Total de requerimientos no funcionales: 7
+    - MUST   : 5  (RNF-01, RNF-02, RNF-03, RNF-04, RNF-07)
+    - SHOULD : 2  (RNF-05, RNF-06)
+    - COULD  : 0
+    - WON'T  : 0
+
+  Requerimientos bloqueantes para go-live: 10 (todos los MUST de RF y RNF)
+
+  Impacto esperado al completar las 3 fases:
+    - Duplicados    : de 126,000 a < 2,500 (reduccion > 98%)
+    - Tiempo espera : contribucion a reduccion de 52 min a <= 30 min en admision
+    - Seguridad     : Riesgo #1 y #2 del Anexo Tecnico mitigados
+    - Facturacion   : base para reducir ciclo de 17-35 dias al eliminar
+                      inconsistencias de identidad que generan expedientes observados
+
+================================================================================
+FIN DEL DOCUMENTO - 04_Priorizacion_de_Requerimientos.txt
+================================================================================

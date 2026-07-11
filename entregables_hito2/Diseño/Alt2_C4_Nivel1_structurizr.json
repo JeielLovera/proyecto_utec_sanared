@@ -1,0 +1,277 @@
+{
+  "id": 1,
+  "name": "Alt. 2 EMPI Federado DDD - C4 Nivel 1",
+  "description": "Diagrama de Contexto del Sistema EMPI (Indice Maestro de Pacientes Federado con DDD, CQRS y Event Sourcing) - Clinica SanaRed Integrada",
+  "model": {
+    "people": [
+      {
+        "id": "1",
+        "tags": "Person",
+        "name": "Admisionista",
+        "description": "Registra y valida identidad del paciente en admision presencial o urgencias desde cualquier sede.",
+        "location": "Internal",
+        "relationships": [
+          {
+            "id": "101",
+            "sourceId": "1",
+            "destinationId": "5",
+            "description": "Registra paciente y consulta identidad",
+            "technology": "HTTPS REST FHIR R4"
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "tags": "Person",
+        "name": "Medico / Clinico",
+        "description": "Consulta el Golden Record y la vista longitudinal 360 del paciente en el punto de atencion.",
+        "location": "Internal",
+        "relationships": [
+          {
+            "id": "102",
+            "sourceId": "2",
+            "destinationId": "5",
+            "description": "Consulta Golden Record y Vista 360",
+            "technology": "HTTPS REST FHIR R4"
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "tags": "Person",
+        "name": "Operador Gobierno de Datos",
+        "description": "Gestiona duplicados, ejecuta fusiones manuales y monitorea la calidad del indice maestro.",
+        "location": "Internal",
+        "relationships": [
+          {
+            "id": "103",
+            "sourceId": "3",
+            "destinationId": "5",
+            "description": "Gestiona duplicados y calidad del indice",
+            "technology": "UI Admin API REST"
+          }
+        ]
+      },
+      {
+        "id": "4",
+        "tags": "Person",
+        "name": "Auditor",
+        "description": "Acceso de solo lectura al audit trail completo e inmutable de todas las operaciones sobre identidades.",
+        "location": "Internal",
+        "relationships": [
+          {
+            "id": "104",
+            "sourceId": "4",
+            "destinationId": "5",
+            "description": "Consulta audit trail inmutable por EMPI-ID",
+            "technology": "UI Auditoria Read-only"
+          }
+        ]
+      }
+    ],
+    "softwareSystems": [
+      {
+        "id": "5",
+        "tags": "Software System",
+        "name": "EMPI - Dominio de Identidad del Paciente",
+        "description": "Indice Maestro Federado con DDD, CQRS y Event Sourcing completo. Cosmos DB como Event Store. Proyecciones especializadas por caso de uso. Azure Service Bus para propagacion de eventos semanticos. Cloud primario: Azure.",
+        "location": "Internal",
+        "relationships": [
+          {
+            "id": "105",
+            "sourceId": "5",
+            "destinationId": "8",
+            "description": "identity.patient.created y merged via HL7 v2 Fase 1 o FHIR R4 Fase 2",
+            "technology": "Azure Service Bus"
+          },
+          {
+            "id": "106",
+            "sourceId": "5",
+            "destinationId": "9",
+            "description": "identity.patient.created FHIR R4 Patient",
+            "technology": "Azure Service Bus"
+          },
+          {
+            "id": "107",
+            "sourceId": "5",
+            "destinationId": "10",
+            "description": "identity.patient.created vincula DICOM a EMPI-ID",
+            "technology": "Azure Service Bus"
+          },
+          {
+            "id": "108",
+            "sourceId": "5",
+            "destinationId": "7",
+            "description": "identity.patient.created y contact.updated",
+            "technology": "Azure Service Bus REST"
+          },
+          {
+            "id": "109",
+            "sourceId": "5",
+            "destinationId": "11",
+            "description": "identity.patient.merged y contact.updated",
+            "technology": "Azure Service Bus"
+          },
+          {
+            "id": "110",
+            "sourceId": "5",
+            "destinationId": "12",
+            "description": "identity.contact.updated y patient.created",
+            "technology": "Azure Service Bus REST"
+          },
+          {
+            "id": "111",
+            "sourceId": "5",
+            "destinationId": "13",
+            "description": "Valida tokens JWT y claims de rol y sede",
+            "technology": "OAuth2 OIDC mTLS"
+          }
+        ]
+      },
+      {
+        "id": "6",
+        "tags": "Software System,External",
+        "name": "Portal Pacientes AWS RDS",
+        "description": "Autogestion digital del paciente: citas, resultados, actualizacion de contacto.",
+        "location": "External",
+        "relationships": [
+          {
+            "id": "112",
+            "sourceId": "6",
+            "destinationId": "5",
+            "description": "RegisterPatient UpdateContact Consulta Golden Record",
+            "technology": "HTTPS REST Azure APIM"
+          }
+        ]
+      },
+      {
+        "id": "7",
+        "tags": "Software System,External",
+        "name": "Agenda Medica SaaS",
+        "description": "Programacion de citas. Consume identidad del EMPI.",
+        "location": "External",
+        "relationships": []
+      },
+      {
+        "id": "8",
+        "tags": "Software System,External",
+        "name": "HCE Oracle 19c On-Prem Lima",
+        "description": "Historia Clinica Electronica. Sistema de registro de episodios clinicos y datos medicamentos.",
+        "location": "External",
+        "relationships": []
+      },
+      {
+        "id": "9",
+        "tags": "Software System,External",
+        "name": "LIS Azure SQL",
+        "description": "Sistema de Laboratorio. 3400 examenes por dia vinculados a EMPI-ID.",
+        "location": "External",
+        "relationships": []
+      },
+      {
+        "id": "10",
+        "tags": "Software System,External",
+        "name": "PACS x4 sedes mas GCP",
+        "description": "Imagenes DICOM. 920 estudios por dia vinculados a EMPI-ID.",
+        "location": "External",
+        "relationships": []
+      },
+      {
+        "id": "11",
+        "tags": "Software System,External",
+        "name": "ERP Facturacion Nube Privada",
+        "description": "Ciclo de cobro. Consolida facturacion bajo EMPI-ID activo post-merge.",
+        "location": "External",
+        "relationships": []
+      },
+      {
+        "id": "12",
+        "tags": "Software System,External",
+        "name": "CRM SaaS Call Center",
+        "description": "Gestion de interacciones. Consume actualizaciones de datos de contacto.",
+        "location": "External",
+        "relationships": []
+      },
+      {
+        "id": "13",
+        "tags": "Software System,External",
+        "name": "IAM SSO Centralizado INI-03",
+        "description": "Autenticacion federada OAuth2 OIDC y mTLS. MFA obligatorio en escritura.",
+        "location": "External",
+        "relationships": []
+      }
+    ]
+  },
+  "views": {
+    "systemContextViews": [
+      {
+        "softwareSystemId": "5",
+        "key": "SystemContext-EMPI",
+        "description": "C4 Nivel 1 - Contexto del Sistema EMPI",
+        "paperSize": "A3_Landscape",
+        "elements": [
+          { "id": "1" },
+          { "id": "2" },
+          { "id": "3" },
+          { "id": "4" },
+          { "id": "5" },
+          { "id": "6" },
+          { "id": "7" },
+          { "id": "8" },
+          { "id": "9" },
+          { "id": "10" },
+          { "id": "11" },
+          { "id": "12" },
+          { "id": "13" }
+        ],
+        "relationships": [
+          { "id": "101" },
+          { "id": "102" },
+          { "id": "103" },
+          { "id": "104" },
+          { "id": "105" },
+          { "id": "106" },
+          { "id": "107" },
+          { "id": "108" },
+          { "id": "109" },
+          { "id": "110" },
+          { "id": "111" },
+          { "id": "112" }
+        ],
+        "automaticLayout": {
+          "implementation": "Graphviz",
+          "rankDirection": "TopBottom",
+          "rankSeparation": 300,
+          "nodeSeparation": 300,
+          "edgeSeparation": 10,
+          "vertices": false
+        }
+      }
+    ],
+    "configuration": {
+      "styles": {
+        "elements": [
+          {
+            "tag": "Person",
+            "shape": "Person",
+            "background": "#08427b",
+            "color": "#ffffff",
+            "fontSize": 22
+          },
+          {
+            "tag": "Software System",
+            "background": "#1168bd",
+            "color": "#ffffff"
+          },
+          {
+            "tag": "Software System,External",
+            "background": "#999999",
+            "color": "#ffffff"
+          }
+        ]
+      },
+      "lastSavedView": "SystemContext-EMPI",
+      "terminology": {}
+    }
+  }
+}

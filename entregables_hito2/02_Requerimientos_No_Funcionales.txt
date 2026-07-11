@@ -1,0 +1,280 @@
+================================================================================
+REQUERIMIENTOS NO FUNCIONALES
+Iniciativa: Identidad Unificada de Pacientes (EMPI)
+Proyectos: INI-01 / INI-13 | Clinica SanaRed Integrada
+================================================================================
+
+INTRODUCCION
+------------
+Los requerimientos no funcionales definen las restricciones de calidad, rendimiento,
+seguridad, disponibilidad e interoperabilidad que debe cumplir el EMPI para operar
+correctamente en el ecosistema multinube de SanaRed (On-Premises Lima, AWS, Azure,
+GCP y multiples SaaS). Estos requerimientos se derivan directamente de los objetivos
+estrategicos, los riesgos tecnologicos priorizados (Seguridad, Integridad y
+Disponibilidad) y las condiciones operativas descritas en el caso.
+
+================================================================================
+RNF-01: RENDIMIENTO Y TIEMPOS DE RESPUESTA
+================================================================================
+
+Categoria: Performance
+
+RNF-01.1 - Latencia de API en tiempo real
+  Descripcion : La API de consulta al EMPI para matching en tiempo real (usada
+                por admision, portal, agenda y HCE durante la atencion del paciente)
+                debe responder en un tiempo maximo de 500 ms bajo carga normal.
+  Metrica     : Percentil P95 de latencia <= 500 ms medido en produccion.
+  Justificacion: En urgencias, hasta 780 pacientes diarios requieren validacion
+                 inmediata de identidad. Una latencia alta bloquea la admision
+                 y agrava los tiempos de espera actuales (52 minutos).
+  Sistema afectado: API Gateway EMPI / AWS + Azure
+
+RNF-01.2 - Tiempo de respuesta de busqueda de paciente
+  Descripcion : La consulta de Golden Record por EMPI-ID o por atributos biograficos
+                desde cualquier sistema (HCE, Portal, Admision) debe completarse
+                en menos de 2 segundos.
+  Metrica     : Tiempo de respuesta end-to-end <= 2 s para el P99 de consultas.
+  Justificacion: Requerido para no impactar el flujo de consulta medica ni la
+                 experiencia del paciente en recepcion.
+
+RNF-01.3 - Throughput del proceso batch de deduplicacion
+  Descripcion : El proceso batch nocturno debe ser capaz de procesar al menos
+                50,000 registros por hora para completar el universo de 126,000
+                duplicados dentro de la ventana de mantenimiento (00:00 - 05:00).
+  Metrica     : Tasa de procesamiento >= 50,000 registros/hora sostenida durante
+                la ventana de batch.
+  Justificacion: La ventana de procesamiento es limitada para no impactar los
+                 servicios de turno nocturno (urgencias continua operando).
+
+RNF-01.4 - Latencia de propagacion de cambios
+  Descripcion : La propagacion de actualizaciones del Golden Record a los sistemas
+                fuente (HCE, Agenda, Portal, CRM) debe completarse en menos de
+                30 segundos en condiciones normales de red.
+  Metrica     : 99% de las propagaciones completadas en <= 30 s.
+  Justificacion: Cambios de datos de contacto o cobertura deben reflejarse antes
+                 de que el paciente sea atendido en otro canal del mismo dia.
+
+================================================================================
+RNF-02: DISPONIBILIDAD Y RESILIENCIA
+================================================================================
+
+Categoria: Availability / Reliability
+
+RNF-02.1 - Disponibilidad del servicio EMPI
+  Descripcion : El servicio de consulta y actualizacion del EMPI debe estar
+                disponible el 99.9% del tiempo mensual, equivalente a un maximo
+                de 43.8 minutos de downtime mensual.
+  Metrica     : Uptime mensual >= 99.9% medido por monitoreo automatizado.
+  Justificacion: El objetivo estrategico de SanaRed es alcanzar 99.9% en canales
+                 digitales criticos. El EMPI es dependencia de todos ellos.
+
+RNF-02.2 - RTO y RPO del EMPI
+  Descripcion : En caso de falla critica del servicio EMPI:
+                - RTO (Recovery Time Objective): maximo 4 horas.
+                - RPO (Recovery Point Objective): maximo 1 hora de perdida de datos.
+  Metrica     : Validado mediante pruebas de recuperacion ante desastres semestrales.
+  Justificacion: Durante la falla de conectividad que genero 1,400 admisiones en
+                 contingencia y 260 inconsistencias posteriores, la falta de un
+                 RTO definido agrave el problema. Se requiere tener mecanismos de
+                 fallback y replicacion activa.
+
+RNF-02.3 - Modo degradado durante perdida de conectividad de sede
+  Descripcion : Ante la perdida de conectividad entre una sede y el EMPI central,
+                el sistema de admision local debe operar en modo cache-offline
+                con los ultimos datos sincronizados, permitiendo la atencion de
+                urgencias sin bloqueo.
+  Metrica     : El modo cache-offline debe activarse automaticamente en menos de
+                10 segundos tras detectar la perdida de conectividad.
+  Justificacion: SanaRed tiene sedes con conectividad variable. En febrero, la
+                 caida de conectividad genero 1,400 registros de contingencia
+                 con 260 inconsistencias posteriores.
+
+RNF-02.4 - Tolerancia a fallos de sistemas fuente
+  Descripcion : Si uno de los sistemas fuente (Agenda SaaS, CRM, LIS) no responde
+                durante la sincronizacion, el EMPI debe reintentar la propagacion
+                con backoff exponencial y alertar al equipo de operaciones.
+  Metrica     : Maximo 3 reintentos con intervalos de 30s, 60s y 120s antes de
+                escalar la alerta.
+
+================================================================================
+RNF-03: SEGURIDAD Y PRIVACIDAD
+================================================================================
+
+Categoria: Security / Privacy (Riesgo #1 del Anexo Tecnico)
+
+RNF-03.1 - Control de acceso basado en roles (RBAC)
+  Descripcion : El acceso al EMPI y a los datos del Golden Record debe estar
+                controlado mediante RBAC con principio de minimo privilegio.
+                Los roles minimos requeridos son:
+                - Lector clinico (medico): consulta datos clinicos del Golden Record.
+                - Admisionista: consulta y creacion de registros, sin acceso a datos clinicos detallados.
+                - Operador Gobierno de Datos: gestion de duplicados, fusiones y ciclo de vida.
+                - Administrador EMPI: configuracion de reglas y parametros del sistema.
+                - Auditor: acceso de solo lectura a todos los registros y logs.
+  Metrica     : 100% de endpoints de la API del EMPI requieren token de autenticacion
+                con claims de rol verificados. Validado por pruebas de penetracion.
+  Justificacion: El Anexo de Riesgos identifica como critico que los medicos afiliados
+                 que rotan entre sedes puedan conservar permisos mas amplios de los
+                 necesarios. El RBAC del EMPI controla esto desde la fuente de identidad.
+
+RNF-03.2 - Autenticacion con SSO y MFA
+  Descripcion : El acceso al EMPI y sus interfaces de administracion debe requerir
+                autenticacion via SSO corporativo (federated con el IAM centralizado
+                INI-03) y MFA obligatorio para roles con permisos de escritura o
+                fusion de registros.
+  Metrica     : 100% de accesos administrativos y de escritura requieren MFA.
+                El SSO debe cubrir el 100% de sistemas integrados al EMPI.
+  Justificacion: Alineado con la iniciativa INI-03 (IAM Centralizado y SSO) y con
+                 el riesgo de seguridad identificado en el Anexo Tecnico sobre
+                 accesos heterogeneos sin correlacion de identidad del colaborador.
+
+RNF-03.3 - Cifrado de datos en transito y en reposo
+  Descripcion : Todos los datos del Golden Record deben estar cifrados:
+                - En transito: TLS 1.3 minimo para todas las comunicaciones API.
+                - En reposo: cifrado AES-256 para la base de datos central del EMPI.
+                - Los datos de identidad (DNI, nombre, correo, celular) clasificados
+                  como Datos Personales Sensibles deben cumplir con la Ley 29733
+                  (Ley de Proteccion de Datos Personales del Peru).
+  Metrica     : Auditoria de cifrado semestral. Cero hallazgos criticos de datos
+                sensibles en texto plano.
+
+RNF-03.4 - Trazabilidad y auditoria de acceso
+  Descripcion : Cada consulta, modificacion o fusion de un Golden Record debe generar
+                un registro de auditoria inmutable con: EMPI-ID del paciente, usuario
+                que ejecuto la accion, sistema de origen, timestamp, tipo de accion
+                y resultado.
+  Metrica     : 100% de operaciones sobre Golden Records auditadas.
+                Los logs deben ser consultables por auditores en menos de 10 segundos
+                para cualquier rango de fechas dentro del ultimo ano.
+  Justificacion: El Anexo senala que cuando auditoria requiere saber quien vio un
+                 resultado sensible, debe consultar logs separados de multiples
+                 sistemas sin correlacion unica. El EMPI centraliza esta trazabilidad.
+
+RNF-03.5 - Anonimizacion para ambientes no productivos
+  Descripcion : Los datos del EMPI utilizados en ambientes de desarrollo, pruebas y
+                capacitacion deben estar anonimizados o sintetizados.
+                Ningun dato real de paciente puede estar disponible fuera del
+                ambiente de produccion sin proceso de anonimizacion aprobado.
+  Metrica     : Auditoria trimestral de ambientes no productivos. Cero incidentes
+                de exposicion de datos reales en ambientes no productivos.
+
+================================================================================
+RNF-04: INTEROPERABILIDAD
+================================================================================
+
+Categoria: Interoperability / Integration
+
+RNF-04.1 - Cumplimiento de estandares clinicos
+  Descripcion : El EMPI debe implementar y exponer su API de identidad compatible
+                con los estandares:
+                - HL7 FHIR R4: recurso Patient para intercambio de datos demograficos.
+                - IHE PIXm / PDQm: para matching y consulta de identidad de pacientes.
+                Esto permite que los sistemas clinicos (HCE, LIS, PACS) consuman
+                el EMPI sin integraciones propietarias.
+  Metrica     : Certificacion de conformidad FHIR R4 para el recurso Patient.
+                100% de integraciones nuevas usan API estandar FHIR/IHE.
+
+RNF-04.2 - API Gateway como punto unico de acceso
+  Descripcion : Todos los sistemas fuente deben comunicarse con el EMPI a traves
+                del API Gateway centralizado (INI-02). No se permiten conexiones
+                directas a la base de datos del EMPI desde sistemas externos.
+  Metrica     : 0 conexiones directas a la BD del EMPI desde sistemas fuente.
+                100% de llamadas enrutadas a traves del API Gateway con logging.
+
+RNF-04.3 - Compatibilidad con mensajeria HL7 v2 heredada
+  Descripcion : Durante el periodo de transicion, el EMPI debe soportar la recepcion
+                de mensajes HL7 v2 provenientes del integrador existente (que conecta
+                el LIS Azure con el HCE on-premises) para no interrumpir las
+                operaciones mientras se migra al estandar FHIR R4.
+  Metrica     : 100% de mensajes HL7 v2 del integrador procesados sin perdida
+                durante la coexistencia de versiones.
+
+RNF-04.4 - Versionado de API
+  Descripcion : La API del EMPI debe implementar versionado semantico (v1, v2...)
+                Los cambios disruptivos (breaking changes) deben mantener la version
+                anterior operativa durante al menos 6 meses para permitir la
+                migracion ordenada de los sistemas consumidores.
+  Metrica     : Ninguna version activa deprecada con menos de 6 meses de aviso previo.
+
+================================================================================
+RNF-05: ESCALABILIDAD Y CAPACIDAD
+================================================================================
+
+Categoria: Scalability
+
+RNF-05.1 - Escalamiento horizontal ante picos de demanda
+  Descripcion : El servicio EMPI debe escalar horizontalmente de forma automatica
+                ante incrementos de carga. En campanas corporativas, el volumen
+                de citas puede duplicarse (156,000 a 312,000 citas en el mes).
+                El EMPI debe soportar el pico sin degradacion de latencia.
+  Metrica     : El sistema debe mantener SLA de latencia (P95 <= 500 ms) con
+                hasta el doble de la carga promedio diaria sin intervencion manual.
+
+RNF-05.2 - Capacidad del indice maestro
+  Descripcion : El EMPI debe soportar al menos 5 millones de Golden Records activos
+                en su primera version (considerando el universo de pacientes historicos
+                de la red mas proyeccion de crecimiento a 5 anos).
+  Metrica     : Pruebas de carga con 5 millones de registros sin degradacion
+                por encima de los umbrales de latencia definidos.
+
+RNF-05.3 - Capacidad del proceso batch
+  Descripcion : El proceso batch debe poder procesar el universo completo de
+                registros actuales (estimado en 2 millones) en no mas de 5 ventanas
+                nocturnas consecutivas para completar la deduplicacion inicial.
+  Metrica     : Procesamiento minimo de 400,000 registros por noche.
+
+================================================================================
+RNF-06: MANTENIBILIDAD Y OPERABILIDAD
+================================================================================
+
+Categoria: Maintainability / Observability
+
+RNF-06.1 - Observabilidad del servicio EMPI
+  Descripcion : El EMPI debe emitir metricas, logs estructurados y trazas distribuidas
+                compatibles con la plataforma de observabilidad de SanaRed (INI-06a).
+                Las metricas criticas incluyen: latencia de API, tasa de error,
+                throughput de matching, tasa de deduplicacion y cola de revision manual.
+  Metrica     : Dashboard de monitoreo del EMPI disponible en la plataforma central.
+                Alertas automaticas configuradas para umbrales criticos.
+
+RNF-06.2 - Configurabilidad de reglas de matching sin redespliegue
+  Descripcion : Los umbrales de confianza del algoritmo de matching (e.g., cambiar
+                el umbral de 85% a 80%) y las reglas de precedencia de sistemas
+                fuente deben ser configurables sin necesidad de redespliegue del servicio.
+  Metrica     : 100% de parametros de matching modificables via interfaz de
+                administracion o archivo de configuracion sin downtime.
+
+RNF-06.3 - Documentacion de API
+  Descripcion : Todas las APIs del EMPI deben estar documentadas en formato OpenAPI 3.0
+                y disponibles en el portal de desarrolladores interno de SanaRed.
+  Metrica     : 100% de endpoints documentados. Documentacion actualizada en cada
+                release del servicio.
+
+================================================================================
+RNF-07: CUMPLIMIENTO NORMATIVO
+================================================================================
+
+Categoria: Compliance / Regulatory
+
+RNF-07.1 - Ley de Proteccion de Datos Personales (Ley 29733 - Peru)
+  Descripcion : El EMPI debe cumplir con los principios de la Ley 29733: finalidad,
+                proporcionalidad, calidad, seguridad y flujo transfronterizo.
+                Los datos de pacientes procesados en nubes fuera del Peru (AWS EEUU,
+                Azure EEUU, GCP EEUU) deben contar con las salvaguardas contractuales
+                exigidas por la ley.
+  Metrica     : Evaluacion de impacto en privacidad (PIA) completada antes del
+                go-live del EMPI. Cero hallazgos criticos en auditoria anual de
+                cumplimiento de datos personales.
+
+RNF-07.2 - Retencion y eliminacion de datos
+  Descripcion : Los registros del EMPI deben conservarse por el periodo definido
+                por la normativa de salud peruana y la politica interna de SanaRed.
+                Los registros inactivos por fusion deben mantenerse por al menos
+                10 anos para fines de auditoria clinica y legal.
+  Metrica     : Politica de retencion documentada e implementada en el sistema.
+                Proceso automatico de archivo para registros que superen el periodo
+                de retencion activo.
+
+================================================================================
+FIN DEL DOCUMENTO - 02_Requerimientos_No_Funcionales.txt
+================================================================================

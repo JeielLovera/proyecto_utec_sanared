@@ -1,0 +1,297 @@
+================================================================================
+REQUERIMIENTOS FUNCIONALES - FORMATO GHERKIN
+Iniciativa: Identidad Unificada de Pacientes (EMPI)
+Proyectos: INI-01 (Matching + Deduplicacion Batch) / INI-13 (Tiempo Real + Golden Record 360)
+Clinica SanaRed Integrada
+================================================================================
+
+CONTEXTO GENERAL
+----------------
+El EMPI (Enterprise Master Patient Index) es el componente central que crea y
+mantiene un registro unico, canonico y confiable de cada paciente en toda la
+red SanaRed. Debe integrar los registros provenientes de: Portal de Pacientes
+(AWS/RDS), Agenda Medica SaaS, Historia Clinica Electronica Oracle (on-premises),
+Call Center CRM SaaS, LIS Azure SQL, modulos de admision por sede y aseguradoras.
+
+Problema base: 126,000 registros potencialmente duplicados, tiempo de espera
+ambulatoria de 52 minutos (meta: 25 min), ciclo de cobro 17-35 dias y riesgo
+clinico por falta de continuidad asistencial (caso paciente anticoagulado).
+
+================================================================================
+RF-01: CREACION DE IDENTIDAD UNICA (GOLDEN RECORD)
+================================================================================
+
+Feature: Creacion del Golden Record para paciente nuevo
+  Como admisionista o sistema de integracion
+  Quiero que al registrar un nuevo paciente se genere un identificador unico global (EMPI-ID)
+  Para garantizar que exista una sola identidad canonica en toda la red SanaRed
+
+  Scenario: Registro exitoso de paciente nuevo sin duplicados detectados
+    Given que un paciente con DNI "12345678" no existe en ningun sistema de la red
+    When el sistema de admision envia los datos del paciente
+      | Campo             | Valor          |
+      | DNI               | 12345678       |
+      | Nombre            | Carlos Ruiz    |
+      | Fecha nacimiento  | 1975-04-10     |
+      | Correo            | c@email.com    |
+      | Celular           | 987654321      |
+    Then el EMPI genera un EMPI-ID unico global para ese paciente
+    And el Golden Record queda activo con estado "VERIFICADO"
+    And el registro se propaga a los sistemas vinculados: Portal AWS, Agenda SaaS, HCE Oracle
+    And el tiempo de creacion no supera los 3 segundos
+
+  Scenario: Registro de paciente con datos incompletos
+    Given que un sistema fuente envia un registro con DNI presente pero sin correo ni celular
+    When el EMPI procesa el registro
+    Then el EMPI-ID es generado con estado "INCOMPLETO"
+    And se registra una alerta de enriquecimiento pendiente
+    And el paciente puede ser atendido sin bloqueo del flujo clinico
+
+  Scenario: Intento de registro duplicado por mismo DNI desde canal distinto
+    Given que el paciente con DNI "12345678" ya tiene un Golden Record activo en el EMPI
+    When el Portal AWS intenta crear un nuevo registro con el mismo DNI
+    Then el EMPI detecta el duplicado por coincidencia exacta de DNI
+    And devuelve el EMPI-ID existente al sistema solicitante
+    And no crea un segundo registro
+    And registra el evento de deduplicacion en el log de auditoria
+
+
+================================================================================
+RF-02: ALGORITMO DE MATCHING Y DEDUPLICACION BATCH (INI-01)
+================================================================================
+
+Feature: Deduplicacion batch de registros existentes
+  Como operador del area de Gobierno de Datos
+  Quiero ejecutar un proceso batch de matching sobre los registros actuales
+  Para reducir los 126,000 duplicados identificados en la red SanaRed
+
+  Scenario: Ejecucion exitosa del proceso batch nocturno de deduplicacion
+    Given que existen 126,000 registros potencialmente duplicados en la base consolidada
+    And el proceso batch esta programado fuera del horario de atencion (00:00 - 05:00)
+    When se inicia el proceso de matching con los criterios: DNI, nombre completo, fecha de nacimiento y celular
+    Then el sistema aplica el algoritmo de matching probabilistico con umbral de confianza >= 85%
+    And genera un informe con grupos de duplicados clasificados:
+      | Clasificacion       | Criterio                         |
+      | Merge automatico    | Score de confianza >= 95%        |
+      | Revision manual     | Score entre 85% y 94%            |
+      | Descartado          | Score < 85%                      |
+    And los registros con confianza >= 95% se fusionan automaticamente en el Golden Record
+    And los registros con confianza entre 85% y 94% quedan en cola de revision manual
+
+  Scenario: Fusion manual de registros marcados para revision
+    Given que el operador de datos tiene en cola registros marcados para revision manual
+    When el operador revisa el par de registros y confirma que son la misma persona
+    Then el sistema fusiona ambos registros en un unico Golden Record
+    And asigna el EMPI-ID del registro con mayor completitud de datos
+    And el registro secundario queda con estado "INACTIVO - FUSIONADO" con referencia al EMPI-ID resultante
+    And la fusion queda registrada con usuario, fecha, hora y justificacion
+
+  Scenario: Rechazo de fusion en revision manual
+    Given que el operador revisa dos registros marcados como posibles duplicados
+    When el operador determina que son pacientes distintos
+    Then el sistema marca ambos registros como "VERIFICADO - DISTINTO"
+    And agrega una regla de no-match entre esos dos registros para evitar reprocesamiento
+    And registra la decision en el log de auditoria
+
+  Scenario: Generacion de reporte post-deduplicacion
+    Given que el proceso batch ha finalizado su ejecucion
+    When el sistema genera el reporte de resultados
+    Then el reporte incluye:
+      | Metrica                              |
+      | Total de registros procesados        |
+      | Fusiones automaticas realizadas      |
+      | Registros enviados a revision manual |
+      | Registros descartados                |
+      | Tasa de duplicados antes y despues   |
+    And el reporte esta disponible en formato PDF y CSV para descarga
+
+
+================================================================================
+RF-03: MATCHING EN TIEMPO REAL - GOLDEN RECORD 360 (INI-13)
+================================================================================
+
+Feature: Deteccion y resolucion de duplicados en tiempo real
+  Como sistema de admision o canal digital
+  Quiero que el EMPI valide en tiempo real si un paciente ya existe antes de crear un registro nuevo
+  Para evitar la generacion de nuevos duplicados desde cualquier canal de atencion
+
+  Scenario: Paciente encontrado por coincidencia exacta de DNI en tiempo real
+    Given que el sistema de admision de urgencias recibe a un paciente con DNI "87654321"
+    When consulta al EMPI via API antes de crear el registro del episodio
+    Then el EMPI devuelve el Golden Record activo en menos de 500 ms
+    And el episodio de urgencias queda vinculado al EMPI-ID existente
+    And no se crea un nuevo registro de paciente
+
+  Scenario: Paciente sin DNI identificado por datos biograficos
+    Given que llega un paciente extranjero sin DNI peruano
+    And proporciona nombre completo, fecha de nacimiento y numero de pasaporte
+    When el sistema consulta al EMPI con esos atributos
+    Then el EMPI aplica matching por nombre fonetico, fecha de nacimiento y documento de identidad extranjero
+    And si encuentra coincidencia con score >= 90% devuelve el EMPI-ID existente
+    And si no encuentra coincidencia crea un nuevo Golden Record con estado "PENDIENTE VALIDACION"
+
+  Scenario: Paciente registrado como dependiente familiar
+    Given que el titular con EMPI-ID activo registra a su hijo menor de edad como dependiente
+    When el sistema de admision crea el registro del menor
+    Then el EMPI crea un EMPI-ID independiente para el menor
+    And establece una relacion "DEPENDIENTE_DE" entre el EMPI-ID del menor y el del titular
+    And el portal muestra la relacion familiar correctamente sin fusionar los registros
+
+  Scenario: Deteccion de identidad potencialmente duplicada en tiempo real
+    Given que el Portal AWS intenta registrar a un paciente con DNI ya existente en HCE Oracle
+    And los nombres presentan una leve variacion en el segundo apellido
+    When el EMPI evalua los datos recibidos
+    Then el EMPI devuelve codigo "POSIBLE_DUPLICADO" con el EMPI-ID del registro existente
+    And el portal presenta al operador la ficha del posible duplicado para confirmacion
+    And bloquea la creacion automatica hasta recibir confirmacion explicita del operador
+
+
+================================================================================
+RF-04: INTEGRACION CON SISTEMAS FUENTE
+================================================================================
+
+Feature: Sincronizacion bidireccional entre EMPI y sistemas fuente
+  Como sistema core de la red (HCE, Agenda, Portal, Admision, CRM)
+  Quiero estar sincronizado con el EMPI
+  Para que cualquier cambio en la identidad del paciente se refleje en todos los canales
+
+  Scenario: Actualizacion de datos maestros propagada desde el EMPI a todos los sistemas
+    Given que un paciente actualiza su numero de celular desde el Portal AWS
+    When el EMPI recibe el cambio y lo valida
+    Then el EMPI actualiza el Golden Record con el nuevo dato
+    And propaga la actualizacion a: HCE Oracle, Agenda SaaS y CRM SaaS
+    And cada sistema receptor confirma la actualizacion via mensaje de acknowledgment
+    And la propagacion completa ocurre en menos de 30 segundos
+
+  Scenario: Conflicto de datos de contacto entre sistemas fuente
+    Given que el HCE Oracle tiene el correo "juan@email.com" para un EMPI-ID
+    And el Portal AWS tiene "juanp@gmail.com" para el mismo EMPI-ID
+    When el proceso de sincronizacion detecta el conflicto
+    Then el EMPI aplica la regla de precedencia definida en el catalogo de confianza por sistema
+    And registra el conflicto en el log de calidad de datos
+    And notifica al area de Gobierno de Datos para revision y resolucion
+
+  Scenario: Alta de nuevo medico afiliado y sincronizacion de perfil
+    Given que el ERP registra un nuevo medico afiliado con RNE valido
+    When el EMPI recibe el evento de alta desde el ERP
+    Then crea un perfil de identidad para el medico en el EMPI con tipo "PROVEEDOR"
+    And sincroniza su disponibilidad con la Agenda SaaS
+    And asigna los permisos de acceso al HCE segun la especialidad y sede asignada
+
+  Scenario: Integracion con modulo de admision durante contingencia
+    Given que una sede pierde conectividad con el centro de datos
+    When se registran admisiones en formularios temporales de contingencia
+    Then al restaurarse la conectividad el sistema procesa las admisiones pendientes
+    And ejecuta matching contra el EMPI para cada registro de contingencia
+    And los duplicados generados durante la contingencia quedan marcados para revision prioritaria
+
+
+================================================================================
+RF-05: BUSQUEDA Y CONSULTA DEL GOLDEN RECORD
+================================================================================
+
+Feature: Consulta de identidad unificada del paciente desde cualquier sistema
+  Como medico, admisionista o sistema clinico
+  Quiero consultar el Golden Record de un paciente
+  Para acceder a su informacion unificada desde cualquier punto de la red
+
+  Scenario: Busqueda exitosa por EMPI-ID desde el HCE
+    Given que el medico atiende a un paciente y requiere su historial
+    When ingresa el EMPI-ID en la interfaz del HCE Oracle
+    Then el sistema muestra el Golden Record con:
+      | Campo                          |
+      | Datos demograficos             |
+      | Sedes de atencion previas      |
+      | Episodios clinicos vinculados  |
+      | Alergias registradas           |
+      | Identidades de sistemas fuente |
+    And el tiempo de respuesta es inferior a 2 segundos
+
+  Scenario: Busqueda por multiples atributos cuando no se conoce el EMPI-ID
+    Given que el admisionista no conoce el EMPI-ID del paciente
+    When realiza una busqueda con nombre, fecha de nacimiento y DNI
+    Then el sistema devuelve los candidatos ordenados por score de coincidencia descendente
+    And muestra la fuente de cada coincidencia (Portal, Agenda, HCE, etc.)
+    And el admisionista selecciona el registro correcto para vincularlo al episodio
+
+  Scenario: Consulta de vista longitudinal 360 del paciente
+    Given que el medico accede al perfil de un paciente con EMPI-ID activo
+    When solicita la vista longitudinal completa
+    Then el sistema consolida y muestra:
+      | Dimension              | Fuente                |
+      | Ultimas citas          | Agenda SaaS           |
+      | Diagnosticos activos   | HCE Oracle            |
+      | Medicamentos vigentes  | HCE Oracle / Recetas  |
+      | Resultados laboratorio | LIS Azure             |
+      | Imagenes disponibles   | PACS / GCP            |
+      | Consentimientos        | SaaS Firma Electronica|
+    And la informacion proviene de todos los sistemas vinculados al EMPI-ID
+
+
+================================================================================
+RF-06: GESTION DEL CICLO DE VIDA DE LA IDENTIDAD
+================================================================================
+
+Feature: Gestion de estados del Golden Record a lo largo del tiempo
+  Como sistema de Gobierno de Datos
+  Quiero controlar los estados del Golden Record
+  Para mantener la integridad del maestro de pacientes
+
+  Scenario: Inactivacion de registro duplicado tras fusion
+    Given que dos Golden Records han sido fusionados manualmente o automaticamente
+    When el proceso de fusion confirma la operacion
+    Then el registro secundario queda con estado "INACTIVO - FUSIONADO"
+    And mantiene referencia al EMPI-ID resultante del merge
+    And cualquier consulta al EMPI-ID inactivo redirige automaticamente al EMPI-ID activo
+    And los datos historicos del registro secundario se conservan sin eliminacion
+
+  Scenario: Reversion de fusion por error confirmado
+    Given que un Golden Record fue inactivado por error durante la fusion
+    When el operador de Gobierno de Datos solicita la reversion con justificacion documentada
+    Then el sistema reactiva el Golden Record con estado "ACTIVO"
+    And desvincula la referencia al EMPI-ID con el que fue fusionado erroneamente
+    And registra la reversion en el log de auditoria con usuario, fecha y motivo
+
+  Scenario: Registro de fallecimiento del paciente
+    Given que el sistema de hospitalizacion o admision recibe notificacion de fallecimiento
+    When el operador registra el deceso en el sistema
+    Then el Golden Record se marca con estado "INACTIVO - FALLECIDO"
+    And se bloquea la creacion de nuevas citas para ese EMPI-ID
+    And la historia clinica queda en modo solo lectura con acceso restringido y auditado
+
+
+================================================================================
+RF-07: GOBIERNO Y CALIDAD DEL DATO MAESTRO
+================================================================================
+
+Feature: Monitoreo de calidad del indice maestro de pacientes
+  Como responsable de Gobierno de Datos
+  Quiero tener metricas de calidad del EMPI disponibles en tiempo real
+  Para asegurar que el indice mantiene su confiabilidad operativa y clinica
+
+  Scenario: Alerta automatica por tasa de duplicados superior al umbral definido
+    Given que el sistema monitorea la tasa de duplicados del EMPI
+    When la tasa de registros potencialmente duplicados supera el 2% del total de registros activos
+    Then el sistema genera una alerta automatica al area de Gobierno de Datos
+    And propone la ejecucion de un proceso batch de deduplicacion
+    And registra la alerta en el dashboard de calidad de datos con timestamp y magnitud
+
+  Scenario: Reporte periodico automatico de calidad del EMPI
+    Given que esta configurado un reporte semanal de calidad del EMPI
+    When se ejecuta el proceso de generacion del reporte cada lunes a las 06:00
+    Then el sistema produce indicadores:
+      | Indicador                                    |
+      | % de registros con DNI validado              |
+      | % de registros con correo verificado         |
+      | % de registros con celular activo            |
+      | Tasa de duplicados residual                  |
+      | Numero de fusiones ejecutadas en el periodo  |
+      | Numero de rechazos de merge en el periodo    |
+      | Numero de reveriones por error               |
+    And el reporte se envia automaticamente por correo a los responsables definidos
+    And queda almacenado en el repositorio de reportes con retencion de 24 meses
+
+
+================================================================================
+FIN DEL DOCUMENTO - 01_Requerimientos_Funcionales.txt
+================================================================================

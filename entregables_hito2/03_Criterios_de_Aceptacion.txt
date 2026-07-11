@@ -1,0 +1,324 @@
+================================================================================
+CRITERIOS DE ACEPTACION
+Iniciativa: Identidad Unificada de Pacientes (EMPI)
+Proyectos: INI-01 / INI-13 | Clinica SanaRed Integrada
+================================================================================
+
+INTRODUCCION
+------------
+Los criterios de aceptacion definen las condiciones verificables que deben cumplirse
+para que cada requerimiento (funcional y no funcional) sea considerado COMPLETADO
+y listo para paso a produccion. Estan agrupados por area de capacidad y alineados
+a los proyectos INI-01 (Batch) e INI-13 (Tiempo Real + Golden Record 360).
+
+Leyenda de estado:
+  [OBLIGATORIO]  : La iniciativa no puede ir a produccion si este criterio falla.
+  [RECOMENDADO]  : Deseable; su ausencia no bloquea el go-live pero debe tener plan.
+
+================================================================================
+CA-01: GOLDEN RECORD Y CREACION DE IDENTIDAD
+================================================================================
+
+Ref: RF-01 | INI-01 / INI-13
+
+CA-01.1 [OBLIGATORIO]
+  Titulo       : Generacion de EMPI-ID unico no reutilizable
+  Condicion    : Para cada nuevo paciente registrado desde cualquier canal (Portal,
+                 Admision, Agenda, Call Center), el sistema genera exactamente un
+                 EMPI-ID de formato estandarizado (ej. EMPI-XXXXXXXX).
+  Verificacion : Ejecutar 1,000 altas simultaneas via API y confirmar que:
+                 - No existen EMPI-IDs duplicados en el conjunto generado.
+                 - Ninguno de los IDs generados coincide con uno existente.
+                 - El tiempo de respuesta del P95 no supera los 3 segundos.
+  Resultado esperado: 1,000 EMPI-IDs unicos, 0 duplicados, P95 <= 3 s.
+
+CA-01.2 [OBLIGATORIO]
+  Titulo       : Prevencion de creacion de duplicado cuando el DNI ya existe
+  Condicion    : Si el DNI ingresado ya tiene un Golden Record activo en el EMPI,
+                 el sistema NO crea un nuevo registro; devuelve el EMPI-ID existente
+                 con codigo HTTP 200 y el flag "existing_record: true".
+  Verificacion : Intentar crear 50 registros con DNIs ya existentes desde distintos
+                 canales (Portal, Admision, Agenda).
+  Resultado esperado: 0 registros nuevos creados; 50 respuestas con EMPI-ID
+                      existente; 50 entradas en el log de deduplicacion.
+
+CA-01.3 [OBLIGATORIO]
+  Titulo       : Propagacion del Golden Record a sistemas fuente
+  Condicion    : Tras la creacion de un Golden Record, la notificacion de alta
+                 llega a HCE Oracle, Agenda SaaS y Portal AWS en menos de 30 s.
+  Verificacion : Crear 100 registros de prueba y medir el tiempo de llegada del
+                 evento a cada sistema receptor mediante los logs de la cola de
+                 mensajeria.
+  Resultado esperado: 99% de propagaciones completadas en <= 30 s;
+                      0 registros sin notificacion despues de 5 minutos.
+
+CA-01.4 [RECOMENDADO]
+  Titulo       : Alta con datos incompletos no bloquea la atencion clinica
+  Condicion    : Un registro creado sin correo y sin celular recibe estado
+                 "INCOMPLETO" pero permite continuar con admision y atencion.
+  Verificacion : Intentar registrar y admitir a 10 pacientes con datos minimos
+                 (solo DNI, nombre y fecha de nacimiento).
+  Resultado esperado: 10 altas exitosas con estado "INCOMPLETO"; los pacientes
+                      pueden ser admitidos sin mensaje de error bloqueante.
+
+
+================================================================================
+CA-02: DEDUPLICACION BATCH (INI-01)
+================================================================================
+
+Ref: RF-02 | INI-01
+
+CA-02.1 [OBLIGATORIO]
+  Titulo       : Reduccion minima de duplicados tras primer batch completo
+  Condicion    : Despues de ejecutar el proceso batch inicial sobre los 126,000
+                 registros duplicados, al menos el 60% deben quedar resueltos
+                 (fusionados automaticamente o clasificados para revision manual).
+  Verificacion : Ejecutar el batch sobre dataset de prueba representativo de
+                 126,000 registros y medir los resultados por categoria.
+  Resultado esperado:
+    - >= 75,600 registros resueltos (60% del total).
+    - Tasa de falsos positivos en merge automatico < 0.5%.
+    - El proceso completa dentro de la ventana de 5 horas (00:00 - 05:00).
+
+CA-02.2 [OBLIGATORIO]
+  Titulo       : Auditabilidad de cada fusion batch
+  Condicion    : Cada fusion realizada por el batch queda registrada con: EMPI-ID
+                 resultante, EMPI-IDs fusionados, score de confianza, timestamp
+                 y tipo (automatico/manual).
+  Verificacion : Consultar el log de auditorias post-batch y verificar que el 100%
+                 de las fusiones tiene todos los campos requeridos.
+  Resultado esperado: 0 fusiones sin registro completo de auditoria.
+
+CA-02.3 [OBLIGATORIO]
+  Titulo       : La cola de revision manual es accesible y accionable
+  Condicion    : Los registros clasificados para revision manual se presentan en
+                 una interfaz de gestion donde el operador puede: ver ambos registros
+                 lado a lado, confirmar o rechazar la fusion y registrar la justificacion.
+  Verificacion : Validar la interfaz de revision con 5 operadores de prueba
+                 procesando 100 casos de la cola.
+  Resultado esperado: Todos los operadores completan la revision sin errores
+                      de sistema; cada decision queda guardada con usuario y timestamp.
+
+CA-02.4 [OBLIGATORIO]
+  Titulo       : Reversion de fusion no elimina datos historicos
+  Condicion    : Al revertir una fusion por error, el registro secundario que
+                 estaba inactivo vuelve al estado "ACTIVO" con todos sus datos
+                 historicos intactos.
+  Verificacion : Ejecutar fusion + reversion de 20 registros de prueba y comparar
+                 el contenido del registro secundario antes y despues.
+  Resultado esperado: 100% de campos originales conservados; 0 perdidas de datos.
+
+CA-02.5 [RECOMENDADO]
+  Titulo       : Reporte post-batch disponible en menos de 10 minutos
+  Condicion    : El reporte de resultados del batch se genera automaticamente al
+                 finalizar el proceso y esta disponible en el dashboard en <= 10 min.
+  Verificacion : Medir el tiempo entre fin del proceso batch y disponibilidad
+                 del reporte en el dashboard y como descarga.
+  Resultado esperado: Reporte disponible en <= 10 minutos post-proceso.
+
+
+================================================================================
+CA-03: MATCHING EN TIEMPO REAL (INI-13)
+================================================================================
+
+Ref: RF-03 | INI-13
+
+CA-03.1 [OBLIGATORIO]
+  Titulo       : Latencia de API de matching en tiempo real bajo carga normal
+  Condicion    : El endpoint de busqueda/matching del EMPI responde en P95 <= 500 ms
+                 bajo carga de 200 consultas concurrentes (carga tipica en pico de
+                 admisiones mananas).
+  Verificacion : Prueba de carga con JMeter/Gatling: 200 usuarios concurrentes,
+                 5 minutos de duracion, consultas con atributos variados.
+  Resultado esperado: P95 de latencia <= 500 ms; P99 <= 1,000 ms; tasa de error < 0.1%.
+
+CA-03.2 [OBLIGATORIO]
+  Titulo       : Deteccion correcta de duplicado exacto por DNI
+  Condicion    : Cuando se consulta un DNI que ya tiene Golden Record activo,
+                 el EMPI siempre devuelve el EMPI-ID existente y nunca crea un registro nuevo.
+  Verificacion : Dataset de 500 DNIs existentes consultados desde 3 sistemas distintos
+                 (Portal, Admision, Agenda) simultaneamente.
+  Resultado esperado: 1,500 respuestas con EMPI-ID correcto; 0 registros nuevos creados.
+
+CA-03.3 [OBLIGATORIO]
+  Titulo       : Tasa de precision del algoritmo de matching probabilistico
+  Condicion    : El algoritmo de matching debe alcanzar:
+                 - Precision >= 98% (de los matches propuestos, >= 98% son correctos).
+                 - Recall >= 90% (de los duplicados reales, >= 90% son detectados).
+  Verificacion : Validacion con dataset etiquetado de 10,000 pares de registros
+                 (5,000 duplicados reales, 5,000 no duplicados).
+  Resultado esperado: Precision >= 98%; Recall >= 90%; F1-score >= 0.94.
+
+CA-03.4 [OBLIGATORIO]
+  Titulo       : Manejo correcto de pacientes con cambio de aseguradora
+  Condicion    : Cuando un paciente cambia de aseguradora, el nuevo registro de
+                 poliza se vincula al EMPI-ID existente sin crear un nuevo Golden Record.
+  Verificacion : Simular 100 cambios de aseguradora para pacientes existentes.
+  Resultado esperado: 100 actualizaciones de poliza vinculadas al EMPI-ID original;
+                      0 nuevos Golden Records creados por cambio de aseguradora.
+
+CA-03.5 [OBLIGATORIO]
+  Titulo       : Vista longitudinal 360 consolidada correctamente
+  Condicion    : La vista 360 del paciente consolida datos de HCE Oracle, LIS Azure,
+                 PACS GCP, Agenda SaaS y Portal AWS sin datos de otro paciente
+                 y sin registros duplicados dentro de la misma dimension.
+  Verificacion : Seleccionar 50 pacientes con historial en al menos 3 sistemas distintos
+                 y validar la completitud y exactitud de su vista 360.
+  Resultado esperado: 0 casos con datos de paciente incorrecto; 0 episodios
+                      duplicados en la vista longitudinal; completitud >= 95%.
+
+CA-03.6 [RECOMENDADO]
+  Titulo       : Creacion de relacion de dependiente sin fusion de registros
+  Condicion    : Registrar a un dependiente familiar no fusiona su registro con el
+                 del titular; crea un EMPI-ID propio con relacion "DEPENDIENTE_DE".
+  Verificacion : Registrar 20 menores como dependientes de distintos titulares.
+  Resultado esperado: 20 nuevos EMPI-IDs creados; 20 relaciones "DEPENDIENTE_DE"
+                      establecidas; 0 fusiones involuntarias de registros.
+
+
+================================================================================
+CA-04: INTEGRACION CON SISTEMAS FUENTE
+================================================================================
+
+Ref: RF-04 | INI-01 / INI-13
+
+CA-04.1 [OBLIGATORIO]
+  Titulo       : Integracion funcional con los 5 sistemas fuente principales
+  Condicion    : El EMPI debe estar integrado y operativo con: Portal AWS, Agenda
+                 SaaS, HCE Oracle (on-premises), CRM SaaS y modulos de admision
+                 de las 4 clinicas antes del go-live.
+  Verificacion : Test de integracion end-to-end: crear un paciente en cada sistema
+                 fuente y verificar que el Golden Record se consolida correctamente.
+  Resultado esperado: 5/5 integraciones funcionales validadas; 0 registros perdidos
+                      en la sincronizacion inicial.
+
+CA-04.2 [OBLIGATORIO]
+  Titulo       : Manejo de modo degradado (offline de sede)
+  Condicion    : Al simular la perdida de conectividad de una sede, el sistema
+                 activa el modo cache en menos de 10 segundos y permite continuar
+                 las admisiones. Al restaurar la conectividad, sincroniza las
+                 admisiones pendientes sin duplicados.
+  Verificacion : Prueba de contingencia: desconectar una sede de prueba por 30
+                 minutos, registrar 50 admisiones offline y reconectar.
+  Resultado esperado: Modo cache activo en <= 10 s; 50 admisiones procesadas;
+                      0 duplicados post-sincronizacion; 0 admisiones perdidas.
+
+CA-04.3 [RECOMENDADO]
+  Titulo       : Resolucion automatica de conflictos de datos de contacto
+  Condicion    : En caso de conflicto de datos de contacto entre sistemas fuente,
+                 el EMPI aplica la regla de precedencia configurada y registra el
+                 conflicto para revision del equipo de Gobierno de Datos.
+  Verificacion : Generar 50 conflictos de contacto simulados entre Portal y HCE.
+  Resultado esperado: 50 resoluciones automaticas aplicando la regla de precedencia;
+                      50 conflictos registrados en el log de calidad de datos.
+
+
+================================================================================
+CA-05: SEGURIDAD Y AUDITORIA
+================================================================================
+
+Ref: RNF-03 | INI-03 (IAM) / INI-06c (RBAC + Cifrado)
+
+CA-05.1 [OBLIGATORIO]
+  Titulo       : Control de acceso RBAC verificado para todos los roles
+  Condicion    : Cada rol definido (Lector Clinico, Admisionista, Operador Datos,
+                 Administrador, Auditor) solo puede acceder a las operaciones y
+                 datos que le corresponden. Ningun rol puede escalar privilegios
+                 sin proceso de autorizacion.
+  Verificacion : Pruebas de acceso con usuarios de cada rol intentando operaciones
+                 fuera de su perfil (total: 25 casos de prueba de acceso no autorizado).
+  Resultado esperado: 25/25 accesos no autorizados bloqueados con respuesta 403;
+                      25 intentos registrados en el log de auditoria.
+
+CA-05.2 [OBLIGATORIO]
+  Titulo       : Auditoria completa de operaciones sobre Golden Records
+  Condicion    : El 100% de las operaciones (consulta, creacion, actualizacion,
+                 fusion, inactivacion, reversion) sobre Golden Records genera un
+                 registro de auditoria inmutable con todos los campos requeridos.
+  Verificacion : Ejecutar 200 operaciones de distintos tipos y verificar el log
+                 de auditoria post-ejecucion.
+  Resultado esperado: 200/200 operaciones con registro de auditoria completo;
+                      0 operaciones sin traza.
+
+CA-05.3 [OBLIGATORIO]
+  Titulo       : Cifrado de datos sensibles en transito y en reposo
+  Condicion    : Toda comunicacion con la API del EMPI usa TLS 1.3; los datos en
+                 la BD del EMPI estan cifrados con AES-256.
+  Verificacion : Analisis de trafico de red con herramienta de inspeccion de
+                 protocolos; escaneo de la configuracion de cifrado de la BD.
+  Resultado esperado: 0 comunicaciones en texto plano detectadas; BD configurada
+                      con AES-256 verificado.
+
+CA-05.4 [OBLIGATORIO]
+  Titulo       : Datos de pacientes anonimizados en ambientes no productivos
+  Condicion    : Los ambientes de desarrollo, QA y staging del EMPI no contienen
+                 datos reales de pacientes de SanaRed.
+  Verificacion : Auditoria de los 3 ambientes no productivos verificando que los
+                 datos de identidad son sinteticos o anonimizados.
+  Resultado esperado: 0 registros con DNI real, nombre real o datos de contacto
+                      reales en ambientes no productivos.
+
+
+================================================================================
+CA-06: RENDIMIENTO Y DISPONIBILIDAD
+================================================================================
+
+Ref: RNF-01 / RNF-02
+
+CA-06.1 [OBLIGATORIO]
+  Titulo       : Disponibilidad del servicio EMPI >= 99.9% en el primer mes productivo
+  Condicion    : Durante el primer mes de operacion en produccion, el uptime del
+                 servicio EMPI no es inferior al 99.9%.
+  Verificacion : Monitoreo continuo con heartbeat cada 60 segundos durante 30 dias.
+  Resultado esperado: Uptime >= 99.9%; downtime total <= 43.8 minutos en el mes.
+
+CA-06.2 [OBLIGATORIO]
+  Titulo       : RTO verificado mediante drill de recuperacion
+  Condicion    : En una prueba de recuperacion ante desastre programada, el servicio
+                 EMPI se restaura completamente en menos de 4 horas desde la declaracion
+                 de incidente mayor.
+  Verificacion : Drill de DR semestral con medicion de tiempo desde falla simulada
+                 hasta servicio completamente restaurado.
+  Resultado esperado: Tiempo de restauracion < 4 horas; datos recuperados con
+                      perdida maxima de 1 hora (RPO).
+
+CA-06.3 [OBLIGATORIO]
+  Titulo       : Sin degradacion de latencia en pico de campana corporativa
+  Condicion    : Durante una campana corporativa simulada (doble de carga normal),
+                 la latencia P95 del API de matching se mantiene en <= 500 ms.
+  Verificacion : Prueba de carga con 400 usuarios concurrentes durante 30 minutos
+                 (equivalente a campana corporativa).
+  Resultado esperado: P95 <= 500 ms sostenido; tasa de error < 0.1%; escalamiento
+                      automatico activado sin intervencion manual.
+
+
+================================================================================
+CA-07: CRITERIOS DE GO-LIVE (CHECKLIST DE PRODUCCION)
+================================================================================
+
+Los siguientes criterios deben estar ALL-GREEN antes de autorizar el paso a
+produccion del EMPI (INI-01 e INI-13):
+
+  [X] CA-01.1: EMPI-ID unico verificado en prueba de carga.
+  [X] CA-01.2: Prevencion de duplicados exactos por DNI confirmada.
+  [X] CA-01.3: Propagacion a sistemas fuente en <= 30 s validada.
+  [X] CA-02.1: Deduplicacion batch reduce >= 60% de duplicados en dataset de prueba.
+  [X] CA-02.2: Auditoria de fusiones batch al 100%.
+  [X] CA-03.1: Latencia P95 <= 500 ms en prueba de carga.
+  [X] CA-03.3: Precision >= 98% y Recall >= 90% en dataset etiquetado.
+  [X] CA-04.1: 5/5 integraciones con sistemas fuente funcionales.
+  [X] CA-04.2: Modo degradado offline verificado en prueba de contingencia.
+  [X] CA-05.1: RBAC verificado para todos los roles.
+  [X] CA-05.2: Auditoria al 100% de operaciones sobre Golden Records.
+  [X] CA-05.3: Cifrado TLS 1.3 y AES-256 confirmados.
+  [X] CA-05.4: Ambientes no productivos sin datos reales.
+  [X] CA-06.1: Uptime >= 99.9% en piloto pre-produccion (2 semanas).
+  [X] CA-06.3: Sin degradacion en prueba de pico de campana.
+  [  ] CA-06.2: Drill de DR programado para primer trimestre post go-live.
+
+Nota: Los criterios marcados [RECOMENDADO] deben tener plan de resolucion
+documentado antes del go-live aunque no sean bloqueantes.
+
+================================================================================
+FIN DEL DOCUMENTO - 03_Criterios_de_Aceptacion.txt
+================================================================================
