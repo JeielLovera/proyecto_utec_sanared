@@ -53,4 +53,4 @@ publicó eventos reales en un bus Kafka (Redpanda), este consumidor los leyó de
 y entregó el `ADT^A40`/`ADT^A28` generado a un HCE mock, confirmando **`200 OK`** en la
 respuesta HTTP. Falta: aplicar `infra/terraform/stacks/20-azure-integ/hl7_consumer.tf`
 (Container Registry + Container Instance) contra Azure real con la credencial cross-cloud
-que expone `40-xcloud-net` (ver `infra/terraform/DEPLOYMENT.md` §6.1).
+que expone `40-xcloud-net` (ver `infra/terraform/DEPLOYMENT.demo.md` / `DEPLOYMENT.prod.md` §7).

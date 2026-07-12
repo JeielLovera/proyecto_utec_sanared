@@ -175,7 +175,7 @@ sequenceDiagram
 
 ## 7. Estado de avance (a 2026-07-12)
 
-Los 4 stacks (`10-aws-empi`, `20-azure-integ`, `30-gcp-analytics`, `40-xcloud-net`) se **aplicaron contra cuentas de laboratorio reales** (AWS Academy Learner Lab, Azure for Students, GCP), se ejecutó el golden path B2 (evidencia abajo) y **ya se destruyeron** (orden inverso, DEPLOYMENT.md §8) — sin costo en curso. El bucket de estado (`bootstrap`) se conserva, por lo que la misma topología se puede volver a levantar con `terraform apply` en cualquier momento.
+Los 4 stacks (`10-aws-empi`, `20-azure-integ`, `30-gcp-analytics`, `40-xcloud-net`) se **aplicaron contra cuentas de laboratorio reales** (AWS Academy Learner Lab, Azure for Students, GCP), se ejecutó el golden path B2 (evidencia abajo) y **ya se destruyeron** (orden inverso, `DEPLOYMENT.demo.md` §9) — sin costo en curso. El bucket de estado (`bootstrap`) se conserva, por lo que la misma topología se puede volver a levantar con `terraform apply` en cualquier momento.
 
 | Fase | Componente | Estado |
 |---|---|---|

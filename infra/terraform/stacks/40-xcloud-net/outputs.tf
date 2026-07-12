@@ -22,8 +22,8 @@ output "aws_vpn_gcp_tunnel1_address" {
 # ---------------------------------------------------------------------------
 # Credenciales cross-cloud del bus (consolidadas aquí para que el operador las
 # copie UNA vez a los tfvars de 20-azure-integ / 30-gcp-analytics). No hay un
-# broker de secretos compartido entre las 3 nubes en este perfil demo; ver
-# DEPLOYMENT.md para el flujo manual de distribución.
+# broker de secretos compartido entre las 3 nubes en este perfil; ver
+# DEPLOYMENT.demo.md / DEPLOYMENT.prod.md §7 para el flujo manual de distribución.
 # ---------------------------------------------------------------------------
 output "kafka_bootstrap" {
   description = "Pega en kafka_bootstrap de 20-azure-integ y 30-gcp-analytics."
@@ -36,7 +36,7 @@ output "kafka_auth_mode" {
 }
 
 output "kafka_xcloud_access_key_id" {
-  description = "Pega en aws_access_key_id de 20-azure-integ y 30-gcp-analytics. null si kafka_auth_mode=plaintext (self-hosted, no hace falta) o si 10-aws-empi usa create_iam_roles=false con MSK (usa credenciales temporales de tu sesión, ver DEPLOYMENT.md §6.1)."
+  description = "Pega en aws_access_key_id de 20-azure-integ y 30-gcp-analytics. null si kafka_auth_mode=plaintext (self-hosted, no hace falta) o si 10-aws-empi usa create_iam_roles=false con MSK (usa credenciales temporales de tu sesión, ver DEPLOYMENT.demo.md §7)."
   # Terraform omite del state los outputs con valor null (ver 10-aws-empi/outputs.tf) ->
   # try() evita "Unsupported attribute" cuando el stack de origen no lo tiene.
   value = try(data.terraform_remote_state.aws.outputs.kafka_xcloud_access_key_id, null)

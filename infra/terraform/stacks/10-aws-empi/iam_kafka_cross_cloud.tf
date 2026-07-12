@@ -6,8 +6,8 @@
 # Solo aplica con use_kafka_managed (MSK). El bus self-hosted (Redpanda) no usa IAM
 # (perímetro por security group), así que estos recursos no existen en ese modo.
 # Gateado además por create_iam_roles: en Learner Lab (iam:CreateUser también
-# bloqueado) no se puede crear; usa credenciales temporales de tu sesión en su lugar
-# (ver DEPLOYMENT.md §6.1) o cambia a use_self_hosted_kafka=true.
+# bloqueado) no se puede crear; usa use_self_hosted_kafka=true en su lugar
+# (ver DEPLOYMENT.demo.md §7) o, con cuenta full, DEPLOYMENT.prod.md §7.
 # =============================================================================
 resource "aws_iam_user" "kafka_cross_cloud" {
   count = var.create_iam_roles && local.use_kafka_managed ? 1 : 0

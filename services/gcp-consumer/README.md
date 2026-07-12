@@ -53,4 +53,4 @@ servicio EMPI en Redpanda) y generó correctamente el plan de re-tag DICOM y la 
 `patient_360` (`retag=True row=True`). Pendiente: wiring real QIDO-RS/STOW-RS del DICOM
 retag y el `insert_rows_json` de BigQuery contra un proyecto GCP real (requiere aplicar
 `infra/terraform/stacks/30-gcp-analytics/` con la credencial cross-cloud que expone
-`40-xcloud-net`, ver `infra/terraform/DEPLOYMENT.md` §6.1).
+`40-xcloud-net`, ver `infra/terraform/DEPLOYMENT.demo.md` / `DEPLOYMENT.prod.md` §7).
