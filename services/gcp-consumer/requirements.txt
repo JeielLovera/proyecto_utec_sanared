@@ -4,3 +4,5 @@ google-cloud-bigquery==3.*
 google-api-python-client==2.*
 confluent-kafka==2.*
 aws-msk-iam-sasl-signer-python==1.*
+opentelemetry-sdk==1.27.*
+opentelemetry-exporter-otlp-proto-http==1.27.*

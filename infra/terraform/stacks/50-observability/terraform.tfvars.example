@@ -1,0 +1,17 @@
+project     = "sanared-obs"
+environment = "demo"
+aws_region  = "us-east-1"
+
+# Bucket del estado remoto (el mismo de bootstrap/, para leer la VPC de 10-aws-empi).
+state_bucket = "sanared-empi-tfstate-<REEMPLAZAR_ACCOUNT_ID>"
+state_region = "us-east-1"
+
+# --- AWS Academy Learner Lab ---------------------------------------------------
+create_iam_roles = false
+lab_role_arn     = "arn:aws:iam::<REEMPLAZAR_ACCOUNT_ID>:role/LabRole"
+
+# Vacío = autodetecta tu IP pública al aplicar (ver locals.tf). Fíjalo si quieres
+# acceso desde varias IPs o una IP fija (p. ej. VPN de la universidad).
+admin_cidrs = []
+
+grafana_admin_password = "SanaRedObsDemo2026!"

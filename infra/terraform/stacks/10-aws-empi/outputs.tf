@@ -94,6 +94,23 @@ output "internal_alb_dns" {
   value       = aws_lb.internal.dns_name
 }
 
+output "mtls_ca_cert_pem" {
+  description = "Certificado de la CA de demo (para validar el server cert del ALB en el probe mTLS)."
+  value       = tls_self_signed_cert.ca.cert_pem
+}
+
+output "mtls_admision_client_cert_pem" {
+  description = "Certificado cliente de demo (Módulo de Admisión) firmado por la CA del ALB privado."
+  value       = tls_locally_signed_cert.client_admision.cert_pem
+  sensitive   = true
+}
+
+output "mtls_admision_client_key_pem" {
+  description = "Clave privada del certificado cliente de demo. Solo para el probe mTLS del ALB interno (no usar fuera del lab)."
+  value       = tls_private_key.client_admision.private_key_pem
+  sensitive   = true
+}
+
 output "patient_api_url" {
   description = "URL pública del paciente (API Gateway + WAF)."
   value       = aws_api_gateway_stage.public.invoke_url
@@ -101,4 +118,9 @@ output "patient_api_url" {
 
 output "ecs_cluster" {
   value = aws_ecs_cluster.empi.name
+}
+
+output "ecs_service" {
+  description = "Nombre del servicio ECS del EMPI (el cluster también aloja el bus self-hosted; hay que filtrar por servicio al listar tareas)."
+  value       = aws_ecs_service.empi.name
 }

@@ -36,18 +36,19 @@ API_URL="$(tf_out "$TF_10" patient_api_url)"
 RDS_SECRET_ARN="$(tf_out "$TF_10" rds_secret_arn)"
 RDS_ENDPOINT="$(tf_out "$TF_10" rds_endpoint)"
 ECS_CLUSTER="$(tf_out "$TF_10" ecs_cluster)"
+ECS_SERVICE="$(tf_out "$TF_10" ecs_service)"
 RG_NAME="$(tf_out "$TF_20" resource_group_name)"
 HCE_CONTAINER="$(tf_out "$TF_20" hce_mock_container_name)"
 BQ_DATASET="$(tf_out "$TF_30" bigquery_dataset)"
 BQ_PROJECT="$(tf_out "$TF_30" project_id)"
 
-for v in API_URL RDS_SECRET_ARN ECS_CLUSTER RG_NAME HCE_CONTAINER BQ_DATASET BQ_PROJECT; do
+for v in API_URL RDS_SECRET_ARN ECS_CLUSTER ECS_SERVICE RG_NAME HCE_CONTAINER BQ_DATASET BQ_PROJECT; do
   if [ -z "${!v}" ]; then
     echo "ERROR: falta el output '$v'. ¿Están aplicados los stacks 10/20/30 y el bus activado (DEPLOYMENT.md §6.1)?" >&2
     exit 1
   fi
 done
-log "API_URL=$API_URL | ECS_CLUSTER=$ECS_CLUSTER | RG_NAME=$RG_NAME | BQ=$BQ_PROJECT.$BQ_DATASET"
+log "API_URL=$API_URL | ECS_CLUSTER=$ECS_CLUSTER | ECS_SERVICE=$ECS_SERVICE | RG_NAME=$RG_NAME | BQ=$BQ_PROJECT.$BQ_DATASET"
 
 # -----------------------------------------------------------------------------
 # 1) Alta del paciente survivor (Flujo A, PORTAL, con DNI) — dispara REGISTERED.
@@ -97,9 +98,12 @@ sleep 30
 # 5) Evidencia en RDS (golden_record_view, patient_crosswalk_view, audit_trail)
 #    vía ECS Exec: RDS está en subred privada, se corre psql DESDE la propia tarea
 #    ECS del servicio EMPI (requiere enable_execute_command=true, ver ecs.tf).
+#    El cluster también aloja el bus self-hosted (Redpanda) como otro servicio,
+#    así que hay que filtrar por --service-name; de lo contrario list-tasks puede
+#    devolver la tarea de Redpanda (sin ECS Exec habilitado ni contenedor "empi").
 # -----------------------------------------------------------------------------
 log "Paso 5/6 — evidencia RDS vía ECS Exec (golden_record_view/crosswalk/audit_trail)"
-TASK_ARN="$(aws ecs list-tasks --cluster "$ECS_CLUSTER" --desired-status RUNNING --query 'taskArns[0]' --output text)"
+TASK_ARN="$(aws ecs list-tasks --cluster "$ECS_CLUSTER" --service-name "$ECS_SERVICE" --desired-status RUNNING --query 'taskArns[0]' --output text)"
 if [ -z "$TASK_ARN" ] || [ "$TASK_ARN" = "None" ]; then
   echo "ADVERTENCIA: no se encontró una tarea ECS corriendo en $ECS_CLUSTER; se omite la evidencia RDS." >&2
 else

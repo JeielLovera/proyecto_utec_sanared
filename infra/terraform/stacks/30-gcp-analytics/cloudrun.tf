@@ -94,6 +94,13 @@ resource "google_cloud_run_v2_service" "consumer" {
         name  = "AWS_SESSION_TOKEN"
         value = var.aws_session_token
       }
+      dynamic "env" {
+        for_each = var.otel_exporter_endpoint != "" ? [1] : []
+        content {
+          name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
+          value = "http://${var.otel_exporter_endpoint}"
+        }
+      }
     }
   }
 

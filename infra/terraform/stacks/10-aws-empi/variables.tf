@@ -74,3 +74,9 @@ variable "rds_engine_version" {
   type        = string
   default     = "16"
 }
+
+variable "otel_exporter_endpoint" {
+  description = "host:puerto OTLP/HTTP del stack 50-observability (output otlp_http_endpoint). Vacío = tracing deshabilitado (app/tracing.py cae al tracer no-op)."
+  type        = string
+  default     = ""
+}

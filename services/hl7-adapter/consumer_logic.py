@@ -8,6 +8,7 @@ import os
 import urllib.request
 
 from hl7 import to_hl7
+from tracing import inject_http_headers, tracer
 
 log = logging.getLogger("empi.hl7")
 
@@ -32,15 +33,17 @@ def process_event(event: dict) -> dict:
 
 
 def _forward_to_hce(message: str) -> int:
-    req = urllib.request.Request(
-        f"{HCE_ENDPOINT}/adt",
-        data=message.encode("utf-8"),
-        headers={"Content-Type": "application/hl7-v2"},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return resp.status
-    except Exception as exc:  # el HCE simulado puede no estar disponible
-        log.warning("HCE no alcanzable: %s", exc)
-        return 0
+    with tracer.start_as_current_span("forward_to_hce"):
+        headers = {"Content-Type": "application/hl7-v2", **inject_http_headers()}
+        req = urllib.request.Request(
+            f"{HCE_ENDPOINT}/adt",
+            data=message.encode("utf-8"),
+            headers=headers,
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return resp.status
+        except Exception as exc:  # el HCE simulado puede no estar disponible
+            log.warning("HCE no alcanzable: %s", exc)
+            return 0

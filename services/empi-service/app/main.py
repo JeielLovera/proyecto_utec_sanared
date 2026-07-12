@@ -6,6 +6,7 @@ import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Header, HTTPException
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from . import service
 from .db import healthy, pool
@@ -22,6 +23,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="EMPI — SanaRed (Alt. 3 Mejorada)", version="0.1.0", lifespan=lifespan)
+# Extrae el traceparent entrante (si lo hay) y crea el span raíz del request; con
+# OTEL_EXPORTER_OTLP_ENDPOINT sin configurar cae al tracer no-op (ver .tracing).
+FastAPIInstrumentor.instrument_app(app)
 
 
 @app.get("/health")

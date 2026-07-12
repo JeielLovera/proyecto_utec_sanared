@@ -13,6 +13,7 @@ import threading
 
 from flask import Flask, request
 
+from tracing import tracer
 from transform import process_event
 
 logging.basicConfig(level=logging.INFO)
@@ -74,9 +75,10 @@ def _upsert_patient_360(row: dict) -> None:
     except ImportError:
         log.warning("google-cloud-bigquery no instalado; upsert omitido (%s)", row["empi_id"])
         return
-    client = bigquery.Client(project=PROJECT_ID)
-    table_ref = f"{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}"
-    errors = client.insert_rows_json(table_ref, [row])
+    with tracer.start_as_current_span("bigquery.insert_rows_json"):
+        client = bigquery.Client(project=PROJECT_ID)
+        table_ref = f"{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}"
+        errors = client.insert_rows_json(table_ref, [row])
     if errors:
         log.error("BigQuery insert errors: %s", errors)
 

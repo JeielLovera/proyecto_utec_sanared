@@ -85,3 +85,9 @@ variable "aws_session_token" {
   default     = ""
   sensitive   = true
 }
+
+variable "otel_exporter_endpoint" {
+  description = "host:puerto OTLP/HTTP del stack 50-observability (output otlp_http_endpoint). Vacío = tracing deshabilitado (tracing.py cae al tracer no-op)."
+  type        = string
+  default     = ""
+}

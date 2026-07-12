@@ -38,14 +38,16 @@ resource "aws_ecs_task_definition" "empi" {
     essential    = true
     portMappings = [{ containerPort = 8000, protocol = "tcp" }]
 
-    environment = [
+    environment = concat([
       { name = "EMPI_ENVIRONMENT", value = var.environment },
       { name = "EMPI_MIGRATE", value = "true" }, # aplica el esquema al arranque (VPC)
       { name = "EMPI_BUS_BACKEND", value = var.enable_msk ? "kafka" : "noop" },
       { name = "EMPI_KAFKA_AUTH", value = var.use_self_hosted_kafka ? "plaintext" : "iam" },
       { name = "EMPI_KAFKA_REGION", value = data.aws_region.current.name },
       { name = "EMPI_KAFKA_REPLICATION_FACTOR", value = var.use_self_hosted_kafka ? "1" : "2" },
-    ]
+      ], var.otel_exporter_endpoint != "" ? [
+      { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = "http://${var.otel_exporter_endpoint}" },
+    ] : [])
 
     # Inyección segura: partes de conexión + umbrales desde SSM/Secrets.
     secrets = concat([

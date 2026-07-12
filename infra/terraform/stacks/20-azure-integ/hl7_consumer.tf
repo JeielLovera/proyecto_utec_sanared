@@ -44,12 +44,14 @@ resource "azurerm_container_group" "hl7_consumer" {
       protocol = "TCP"
     }
 
-    environment_variables = {
+    environment_variables = merge({
       HCE_ENDPOINT   = "http://${azurerm_container_group.hce.ip_address}:8080"
       KAFKA_GROUP_ID = "empi-hl7-adapter"
       KAFKA_AUTH     = var.kafka_auth_mode
       KAFKA_REGION   = "us-east-1"
-    }
+      }, var.otel_exporter_endpoint != "" ? {
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://${var.otel_exporter_endpoint}"
+    } : {})
 
     secure_environment_variables = {
       KAFKA_BOOTSTRAP       = var.kafka_bootstrap

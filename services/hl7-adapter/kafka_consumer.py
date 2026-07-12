@@ -18,6 +18,7 @@ import sys
 from confluent_kafka import Consumer
 
 from consumer_logic import process_event
+from tracing import extract_kafka_context, tracer
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("empi.hl7.consumer")
@@ -63,7 +64,9 @@ def run(max_messages: int | None = None) -> int:
                 log.error("kafka error: %s", msg.error())
                 continue
             event = json.loads(msg.value())
-            result = process_event(event)
+            ctx = extract_kafka_context(msg.headers())
+            with tracer.start_as_current_span("process_event", context=ctx):
+                result = process_event(event)
             log.info("consumido %s -> %s", event.get("event_type"), result.get("message_type"))
             processed += 1
     finally:

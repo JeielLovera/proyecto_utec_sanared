@@ -17,6 +17,7 @@ import json
 import logging
 
 from .config import settings
+from .tracing import inject_kafka_headers, tracer
 
 log = logging.getLogger("empi.bus")
 
@@ -125,8 +126,9 @@ class KafkaBus:
         if not topic:
             return
         env = build_envelope(event_type, empi_id, event_id, correlation_id, occurred_at, payload)
-        self._producer.produce(topic, key=empi_id, value=json.dumps(env))
-        self._producer.flush(timeout=10)
+        with tracer.start_as_current_span(f"kafka.publish {topic}"):
+            self._producer.produce(topic, key=empi_id, value=json.dumps(env), headers=inject_kafka_headers())
+            self._producer.flush(timeout=10)
         log.info("BUS(kafka) %s -> %s", topic, env)
 
 

@@ -9,3 +9,11 @@ Desktop.ini
 # Temporales
 *.tmp
 *~
+
+# Cache de bytecode Python
+__pycache__/
+*.pyc
+
+# Evidencia generada por los scripts de demo (entregables_hito3/07_Scripts_Modelo_Datos/demo/*.sh)
+# -- cada corrida crea su propio directorio timestamped, no se versiona.
+entregables_hito3/07_Scripts_Modelo_Datos/demo/evidencias/

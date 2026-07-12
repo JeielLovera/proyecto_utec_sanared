@@ -15,6 +15,7 @@ import sys
 
 from confluent_kafka import Consumer
 
+from tracing import extract_kafka_context, tracer
 from transform import process_event
 
 logging.basicConfig(level=logging.INFO)
@@ -62,9 +63,11 @@ def run(max_messages: int | None = None, apply_side_effects=None) -> int:
                 log.error("kafka error: %s", msg.error())
                 continue
             event = json.loads(msg.value())
-            result = process_event(event)
-            if apply_side_effects:
-                apply_side_effects(result)
+            ctx = extract_kafka_context(msg.headers())
+            with tracer.start_as_current_span("process_event", context=ctx):
+                result = process_event(event)
+                if apply_side_effects:
+                    apply_side_effects(result)
             log.info("consumido %s -> retag=%s row=%s", event.get("event_type"),
                      bool(result["dicom_retag"]), bool(result["patient_360_row"]))
             processed += 1
