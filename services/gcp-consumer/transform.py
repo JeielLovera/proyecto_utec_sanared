@@ -32,6 +32,20 @@ def dicom_retag_plan(event: dict) -> dict | None:
     }
 
 
+def _to_crosswalk_identifier(ident: dict) -> dict:
+    """Traduce el identificador FHIR-ish del evento del bus (system/type/value/use/
+    assigning_sede, ver empi-service/app/service.py:_canonical_identifiers) a la forma
+    del STRUCT de patient_360.identifiers (source_system/identifier_type/identifier_value/
+    assigning_sede/status, ver bigquery/patient_360.sql)."""
+    return {
+        "source_system": ident.get("system"),
+        "identifier_type": ident.get("type"),
+        "identifier_value": ident.get("value"),
+        "assigning_sede": ident.get("assigning_sede"),
+        "status": "ACTIVE",
+    }
+
+
 def build_patient_360_row(
     *,
     empi_id: str,
@@ -56,7 +70,7 @@ def build_patient_360_row(
             "birth_date": birth_date,
             "gender": gender,
         },
-        "identifiers": identifiers or [],
+        "identifiers": [_to_crosswalk_identifier(i) for i in (identifiers or [])],
         "lab_results": [],
         "imaging_studies": [],
         "encounters": [],

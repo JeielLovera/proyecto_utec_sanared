@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Optional
 
+from . import cache
 from .config import settings
 
 
@@ -18,9 +19,15 @@ class Candidate:
 
 
 def lookup_exact_dni(conn, dni: Optional[str]) -> Optional[str]:
-    """Paso 1: DNI exacto sobre el crosswalk (ACTIVE). Devuelve el EMPI-ID o None."""
+    """Paso 1: DNI exacto (§4.2). Redis primero (cache-aside); SQL como fuente/fallback.
+    Un hit en Redis evita tocar RDS por completo (early exit, < 10 ms, doc 06 §2)."""
     if not dni:
         return None
+
+    cached = cache.get_dni(dni)
+    if cached:
+        return cached
+
     row = conn.execute(
         """
         SELECT empi_id FROM patient_identifier
@@ -29,7 +36,10 @@ def lookup_exact_dni(conn, dni: Optional[str]) -> Optional[str]:
         """,
         (dni,),
     ).fetchone()
-    return row["empi_id"] if row else None
+    if row:
+        cache.set_dni(dni, row["empi_id"])
+        return row["empi_id"]
+    return None
 
 
 def block_and_score(

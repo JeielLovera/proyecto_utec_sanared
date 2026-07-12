@@ -12,7 +12,7 @@ from datetime import date
 
 from psycopg.types.json import Json
 
-from . import matcher
+from . import cache, matcher
 from .bus import bus
 from .config import settings
 from .ids import TYPE_TO_SOURCE, TYPE_TO_URI, new_empi_id
@@ -220,6 +220,8 @@ def _register(conn, req, correlation_id, *, record_status, events) -> str:
     events.append(_append_event(conn, empi_id=empi_id, event_type="PatientRegistered",
                                 payload=payload, source_system=req.source_system,
                                 correlation_id=correlation_id))
+    if req.dni and record_status == "ACTIVO":
+        cache.set_dni(req.dni, empi_id)  # puebla Redis: próximo lookup es hit (§4.2)
     return empi_id
 
 
@@ -244,6 +246,12 @@ def _merge(conn, *, survivor, merged, candidate, correlation_id, events):
                              payload=payload, source_system="HCE",
                              correlation_id=correlation_id)
     events.append(event_id)
+    # El DNI del absorbido debe re-apuntar al survivor en el caché (no al registro retirado).
+    merged_dni = conn.execute(
+        "SELECT dni FROM golden_record WHERE empi_id = %s", (merged,)
+    ).fetchone()
+    if merged_dni and merged_dni["dni"]:
+        cache.set_dni(merged_dni["dni"], survivor)
     # Evidencia + linaje.
     conn.execute(
         """INSERT INTO match_candidate

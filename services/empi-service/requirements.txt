@@ -5,3 +5,5 @@ psycopg-pool==3.2.*
 pydantic==2.*
 pydantic-settings==2.*
 redis==5.*
+confluent-kafka==2.*
+aws-msk-iam-sasl-signer-python==1.*

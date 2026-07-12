@@ -1,0 +1,14 @@
+{
+  "dni": "45678912",
+  "given_name": "Juan Carlos",
+  "family_name": "Quispe Mamani",
+  "birth_date": "1988-04-12",
+  "gender": "male",
+  "phone": "+51987654321",
+  "email": "jc.quispe@correo.pe",
+  "source_system": "PORTAL",
+  "verification_status": "VERIFICADO",
+  "identifiers": [
+    { "type": "PID", "value": "PT-99182", "use": "secondary" }
+  ]
+}

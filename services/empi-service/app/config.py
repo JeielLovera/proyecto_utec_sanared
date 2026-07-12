@@ -26,9 +26,14 @@ class Settings(BaseSettings):
     # Caché de identidad (opcional; §4.2). Si es None, se omite el Paso 1 por Redis.
     redis_url: str | None = None
 
-    # Bus de eventos: "noop" (log) por defecto; "kafka" en Fase 2/3.
+    # Bus de eventos: "noop" (log) por defecto; "kafka" para publicar de verdad.
     bus_backend: str = "noop"
     kafka_bootstrap: str | None = None
+    # "iam"      -> SASL/OAUTHBEARER firmado con credenciales AWS (MSK Serverless real).
+    # "plaintext" -> sin auth, para probar contra un Kafka/Redpanda local.
+    kafka_auth: str = "iam"
+    kafka_region: str = "us-east-1"
+    kafka_replication_factor: int = 2  # baja a 1 para un broker único (Redpanda local)
 
     # Umbrales del matcher (§5.2). En prod vienen de SSM (RNF-06.2).
     threshold_auto: float = 0.95

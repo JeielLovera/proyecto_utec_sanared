@@ -1,5 +1,6 @@
 # Perfil AWS Academy LEARNER LAB — copia a terraform.tfvars
-# Adecuación por las restricciones del lab (IAM bloqueado, OpenSearch/MSK restringidos).
+# Adecuación por las restricciones del lab (IAM bloqueado, OpenSearch y MSK Serverless
+# restringidos: kafka:CreateClusterV2 y es:AddTags devuelven AccessDenied en esta cuenta).
 project     = "sanared-empi"
 environment = "demo"
 aws_region  = "us-east-1"
@@ -7,10 +8,13 @@ vpc_cidr    = "10.20.0.0/16"
 az_count    = 2
 
 # --- Ajustes de laboratorio ---
-create_iam_roles = false                                          # Learner Lab bloquea iam:CreateRole
-lab_role_arn     = "arn:aws:iam::058264449307:role/LabRole"       # <-- tu ACCOUNT_ID
-enable_opensearch = false                                         # el servicio usa pg_trgm
-enable_msk        = false                                         # el servicio usa bus_backend=noop
-rds_engine_version = "16"                                         # RDS elige el minor disponible
+create_iam_roles       = false                                    # Learner Lab bloquea iam:CreateRole/CreateUser
+lab_role_arn           = "arn:aws:iam::058264449307:role/LabRole" # <-- tu ACCOUNT_ID
+enable_opensearch      = false                                    # el servicio usa pg_trgm (equivalencia doc §12)
+enable_msk             = true                                     # SÍ hay bus real, pero self-hosted (ver abajo)
+use_self_hosted_kafka  = true                                     # MSK Serverless bloqueado -> Redpanda en ECS Fargate
+rds_engine_version     = "16"                                     # RDS elige el minor disponible
 
-# Con esto el stack despliega barato y corre Flujo A end-to-end (sin OpenSearch/MSK/VPN).
+# Con esto el stack despliega barato, corre Flujo A end-to-end y el bus de eventos es
+# REAL (Redpanda en la misma VPC) sin necesitar permisos de MSK ni credenciales IAM
+# cross-cloud (Azure/GCP se conectan solo con kafka_bootstrap, en modo plaintext).

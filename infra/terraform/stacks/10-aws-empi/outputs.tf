@@ -51,8 +51,37 @@ output "app_security_group_id" {
 }
 
 output "bus_cluster_arn" {
-  description = "ARN del cluster MSK Serverless (bus de eventos)."
-  value       = var.enable_msk ? aws_msk_serverless_cluster.bus[0].arn : null
+  description = "ARN del cluster MSK Serverless (null si use_self_hosted_kafka=true o enable_msk=false)."
+  value       = local.use_kafka_managed ? aws_msk_serverless_cluster.bus[0].arn : null
+}
+
+output "kafka_bootstrap" {
+  description = "Bootstrap del bus (host:port). MSK real (SASL/IAM) o Redpanda self-hosted (plaintext) según use_self_hosted_kafka. null si enable_msk=false."
+  value = (
+    local.use_kafka_managed ? data.aws_msk_bootstrap_brokers.bus[0].bootstrap_brokers_sasl_iam :
+    local.use_kafka_selfhosted ? "${aws_lb.kafka[0].dns_name}:9092" :
+    null
+  )
+}
+
+output "kafka_auth_mode" {
+  description = "Modo de autenticación del bus: iam (MSK real) | plaintext (Redpanda self-hosted) | null (bus deshabilitado)."
+  value = (
+    local.use_kafka_managed ? "iam" :
+    local.use_kafka_selfhosted ? "plaintext" :
+    null
+  )
+}
+
+output "kafka_xcloud_access_key_id" {
+  description = "Access key del usuario IAM de solo-consumo del bus MSK. null si create_iam_roles=false o use_self_hosted_kafka=true (Redpanda no usa IAM: usa el kafka_bootstrap directo, sin credencial)."
+  value       = var.create_iam_roles && local.use_kafka_managed ? aws_iam_access_key.kafka_cross_cloud[0].id : null
+}
+
+output "kafka_xcloud_secret_access_key" {
+  description = "Secret de la access key anterior. Ver nota de kafka_xcloud_access_key_id."
+  value       = var.create_iam_roles && local.use_kafka_managed ? aws_iam_access_key.kafka_cross_cloud[0].secret : null
+  sensitive   = true
 }
 
 output "ecr_repository_url" {

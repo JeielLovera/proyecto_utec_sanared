@@ -8,8 +8,8 @@ resource "azurerm_api_management" "empi" {
   count = var.enable_apim ? 1 : 0
 
   name                = "${local.name_prefix}-apim"
-  location            = azurerm_resource_group.empi.location
-  resource_group_name = azurerm_resource_group.empi.name
+  location            = local.rg_location
+  resource_group_name = local.rg_name
   publisher_name      = "SanaRed EMPI"
   publisher_email     = "empi@sanared.pe"
   sku_name            = "Developer_1"
@@ -25,7 +25,7 @@ resource "azurerm_api_management_api" "hce" {
   count = var.enable_apim ? 1 : 0
 
   name                = "hce"
-  resource_group_name = azurerm_resource_group.empi.name
+  resource_group_name = local.rg_name
   api_management_name = azurerm_api_management.empi[0].name
   revision            = "1"
   display_name        = "HCE (legado)"

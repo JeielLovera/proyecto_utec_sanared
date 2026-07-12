@@ -6,6 +6,7 @@ locals {
     "bigquery.googleapis.com",
     "run.googleapis.com",
     "artifactregistry.googleapis.com",
+    "vpcaccess.googleapis.com", # requerido por google_vpc_access_connector (Cloud Run -> VPC)
   ]
 }
 

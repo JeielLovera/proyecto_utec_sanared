@@ -177,6 +177,123 @@ terraform init -backend-config=backend.hcl && terraform apply
 
 ---
 
+## 6.1 Activar el golden path cross-cloud REAL (bus Kafka + consumidores)
+
+Por defecto el servicio EMPI publica en modo `noop` (solo log) y los consumidores Azure/GCP
+no están activos. Para que el `POST /patients` dispare de verdad `ADT^A40` en Azure y el
+re-tag DICOM + fila `patient_360` en GCP, sigue este orden (requiere 10, 20, 30 y 40 ya
+aplicados con `enable_msk = true`).
+
+> **AWS Academy Learner Lab: MSK Serverless está bloqueado** (`kafka:CreateClusterV2`
+> devuelve `AccessDenied`) — el mismo tipo de restricción que IAM y OpenSearch. Usa
+> `use_self_hosted_kafka = true` en `10-aws-empi` (Redpanda en ECS Fargate, mismo
+> protocolo Kafka, broker reemplazable por diseño — ADR-A3M-008). **Con este modo NO
+> necesitas usuario IAM ni credenciales temporales**: el perímetro lo da el security
+> group + la VPN, y `kafka_auth_mode` sale como `plaintext`. Salta directo al paso 2
+> con `aws_access_key_id`/`aws_secret_access_key`/`aws_session_token` en blanco.
+>
+> Si en cambio tu cuenta SÍ puede crear MSK (`use_self_hosted_kafka=false`,
+> `kafka_auth_mode=iam`) y además `create_iam_roles=false`, usa las **credenciales
+> temporales de tu sesión** en el paso 2:
+> ```bash
+> cat ~/.aws/credentials   # o el panel "AWS Details" del lab
+> ```
+> Copia `aws_access_key_id`, `aws_secret_access_key` **y** `aws_session_token`.
+> **Caducan cada ~4h** — cuando expiren, el consumidor empezará a fallar la auth;
+> renuévalas con `terraform apply` de nuevo y reinicia el ACI (`az container restart`,
+> paso 4) o despliega una nueva revisión de Cloud Run.
+
+```bash
+# 1) Saca el bootstrap y modo de auth del bus
+terraform -chdir=infra/terraform/stacks/10-aws-empi output kafka_bootstrap
+terraform -chdir=infra/terraform/stacks/10-aws-empi output kafka_auth_mode
+# Si kafka_auth_mode=iam (MSK real) y create_iam_roles=true, también:
+terraform -chdir=infra/terraform/stacks/10-aws-empi output kafka_xcloud_access_key_id
+terraform -chdir=infra/terraform/stacks/10-aws-empi output -raw kafka_xcloud_secret_access_key
+
+# 2) Pégalas en terraform.tfvars de 20-azure-integ y 30-gcp-analytics
+#    (kafka_bootstrap siempre; aws_access_key_id/secret/session_token SOLO si
+#    kafka_auth_mode=iam) y en 20 además enable_kafka_consumer = true
+
+# 3) Re-aplica ambos stacks (levanta el ACI del consumidor HL7 en Azure y activa el
+#    hilo de fondo del consumidor en Cloud Run vía min_instance_count=1)
+terraform -chdir=infra/terraform/stacks/20-azure-integ apply
+terraform -chdir=infra/terraform/stacks/30-gcp-analytics apply
+
+# 4) Sube las imágenes reales (antes corrían con placeholders)
+#   Azure (ACI del consumidor HL7):
+ACR=$(terraform -chdir=infra/terraform/stacks/20-azure-integ output -raw acr_login_server)
+az acr login --name "${ACR%%.*}"
+docker build -f services/hl7-adapter/Dockerfile -t "$ACR/hl7-adapter:latest" services/hl7-adapter
+docker push "$ACR/hl7-adapter:latest"
+az container restart -g "$(terraform -chdir=infra/terraform/stacks/20-azure-integ output -raw resource_group_name)" \
+  -n "$(terraform -chdir=infra/terraform/stacks/20-azure-integ output -raw hl7_consumer_name)"
+
+#   GCP (Cloud Run consumidor):
+REPO=$(terraform -chdir=infra/terraform/stacks/30-gcp-analytics output -raw artifact_registry_repo)
+gcloud auth configure-docker "${REPO%%/*}"
+docker build -f services/gcp-consumer/Dockerfile -t "$REPO/consumer:latest" services/gcp-consumer
+docker push "$REPO/consumer:latest"
+terraform -chdir=infra/terraform/stacks/30-gcp-analytics apply -var="consumer_image=$REPO/consumer:latest"
+
+# 5) Habilita el bus real en el servicio EMPI (stack 10) y redeploya
+terraform -chdir=infra/terraform/stacks/10-aws-empi apply -var="enable_msk=true"
+aws ecs update-service --cluster sanared-empi-demo-cluster --service sanared-empi-demo-empi \
+  --force-new-deployment --region us-east-1
+```
+
+**Esto ya está verificado localmente** (sin nube real): con Redpanda + Postgres + Redis en
+Docker, un `POST /patients` que produce `B2 merge` publicó de verdad en el bus, el
+consumidor HL7 standalone lo leyó y entregó `ADT^A40` al HCE mock (`200 OK`), y el
+consumidor GCP lo leyó y generó el plan de re-tag DICOM + la fila `patient_360` — los
+tres componentes (productor, consumidor HL7, consumidor GCP) están probados; lo que
+falta es la aplicación real contra AWS/Azure/GCP con tus credenciales de laboratorio.
+
+> **Nota de seguridad (perfil demo):** la credencial cross-cloud viaja como variable de
+> Terraform (`aws_access_key_id`/`aws_secret_access_key`) hacia variables de entorno
+> "seguras" de ACI / Cloud Run. En producción se reemplaza por Key Vault (Azure) y Secret
+> Manager (GCP) con un lector rotativo; aquí se optó por el camino directo para no sumar
+> complejidad de intermediarios de secretos en el perfil de laboratorio.
+
+---
+
+## 6.2 Demo reproducible del golden path B2 (Fase 4)
+
+Con 10/20/30/40 aplicados y el bus real activado (§6.1), el script
+`entregables_hito3/07_Scripts_Modelo_Datos/demo/run_golden_path_b2.sh` ejecuta el flujo
+end-to-end y junta la evidencia en un directorio por corrida (no hace `apply`/`destroy`):
+
+```bash
+# Requiere: aws cli, az cli, bq (gcloud), jq, terraform (para leer outputs) autenticados.
+bash entregables_hito3/07_Scripts_Modelo_Datos/demo/run_golden_path_b2.sh
+```
+
+Qué hace:
+
+1. Lee los outputs de los stacks 10/20/30 (URL de la API, ARN del secreto RDS, cluster
+   ECS, resource group + nombre del ACI del HCE mock, dataset de BigQuery).
+2. `POST /patients` con `payload_01_registro_survivor.json` (Flujo A, PORTAL, con DNI).
+3. `POST /patients` con `payload_02_registro_duplicado_b2.json` — llega **sin DNI** desde
+   HCE con el mismo apellido/nacimiento/teléfono a propósito: al no traer DNI se salta el
+   Paso 1 (lookup exacto) y entra por blocking biográfico
+   (`matcher.py`: `0.60·name_sim + 0.25·dob_equal + 0.15·phone_equal = 1.00 ≥ 0.95`),
+   forzando el camino **B2 real** (no un `LINKED` de Paso 1). El script valida que la
+   respuesta sea `decision=MERGED` contra el `survivor_empi_id` del paso 2.
+4. Espera 30s a que Azure (consumidor HL7) y GCP (Cloud Run) procesen
+   `identity.patient.merged` desde el bus.
+5. Evidencia en RDS (`golden_record_view`, `patient_crosswalk_view`, `audit_trail`) vía
+   **ECS Exec** (`aws ecs execute-command`) — corre `psql` desde dentro de la propia tarea
+   ECS del servicio EMPI, sin bastión, porque RDS está en subred privada. Requiere
+   `enable_execute_command = true` en el servicio ECS (ya habilitado en `ecs.tf`) y el
+   permiso `ssmmessages:*Channel` en el rol de tarea (ya en `iam.tf`).
+6. Evidencia cross-cloud: logs del HCE mock (Azure, busca el `ADT^A40` reflejado por el
+   echo container) y la fila de `patient_360` en BigQuery (GCP).
+7. Escribe `resumen.md` con el resultado de cada paso y las rutas de los archivos.
+
+Los payloads sintéticos (`es_PE`, RNF-07) están en la misma carpeta `demo/`.
+
+---
+
 ## 7. Perfil de laboratorio (AWS Academy Learner Lab) — YA soportado
 
 Learner Lab **no puede** crear roles IAM (`iam:CreateRole` bloqueado) ni etiquetar/crear
@@ -212,6 +329,8 @@ No es un recorte de la arquitectura: los defaults siguen siendo el as-is complet
 | `es:AddTags … AccessDenied` (OpenSearch) | Lab restringe OpenSearch | `enable_opensearch=false` |
 | `Cannot find version 16.4 for postgres` | ese minor no está en la cuenta | `rds_engine_version="16"` |
 | `Invalid rule description` / `WebACL description … pattern` | acentos o `<` en `description` | corregido en el IaC (ASCII) |
+| `ECR Repository ... not empty` (al hacer `destroy`) | subiste una imagen (paso 3.3) y ECR no borra un repo con imágenes dentro | corregido: `force_delete = true` en `ecr.tf`. Si ya te salió el error, vacía el repo a mano (`aws ecr batch-delete-image`) y reintenta el `destroy` |
+| `kafka:CreateClusterV2 ... AccessDenied` (MSK Serverless) | Lab bloquea crear clusters MSK | `use_self_hosted_kafka=true` (Redpanda en ECS Fargate, ver §6.1) |
 
 ---
 

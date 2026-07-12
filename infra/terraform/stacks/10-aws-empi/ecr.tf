@@ -2,6 +2,9 @@
 resource "aws_ecr_repository" "empi" {
   name                 = "${var.project}/empi-service"
   image_tag_mutability = "MUTABLE"
+  # Perfil demo: se destruye/recrea el stack seguido; permite borrar el repo con imágenes
+  # dentro (en prod normalmente se deja en false para evitar borrados accidentales).
+  force_delete = true
 
   image_scanning_configuration {
     scan_on_push = true

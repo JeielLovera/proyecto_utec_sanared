@@ -58,9 +58,15 @@ variable "enable_opensearch" {
 }
 
 variable "enable_msk" {
-  description = "Provisiona el bus MSK. En Learner Lab ponlo en false: el servicio usa bus_backend=noop (Flujo A no lo necesita)."
+  description = "Provisiona un bus de eventos real (MSK Serverless o Redpanda self-hosted, ver use_self_hosted_kafka). false: el servicio usa bus_backend=noop (Flujo A no lo necesita)."
   type        = bool
   default     = true
+}
+
+variable "use_self_hosted_kafka" {
+  description = "true: reemplaza MSK Serverless por Redpanda en ECS Fargate (misma VPC). Úsalo si tu cuenta bloquea kafka:CreateClusterV2 (p. ej. AWS Academy Learner Lab). Broker reemplazable sin tocar código (ADR-A3M-008); sin autenticación IAM (perímetro por security group + VPN)."
+  type        = bool
+  default     = false
 }
 
 variable "rds_engine_version" {

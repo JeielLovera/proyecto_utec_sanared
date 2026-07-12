@@ -5,8 +5,8 @@
 # =============================================================================
 resource "azurerm_container_group" "hce" {
   name                = "${local.name_prefix}-hce-mock"
-  location            = azurerm_resource_group.empi.location
-  resource_group_name = azurerm_resource_group.empi.name
+  location            = local.rg_location
+  resource_group_name = local.rg_name
   os_type             = "Linux"
   ip_address_type     = "Private"
   subnet_ids          = [azurerm_subnet.aci.id]

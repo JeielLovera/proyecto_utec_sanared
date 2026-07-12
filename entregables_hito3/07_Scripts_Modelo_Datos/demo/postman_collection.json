@@ -1,0 +1,84 @@
+{
+  "info": {
+    "name": "SanaRed EMPI — Golden Path B2 (manual)",
+    "description": "Colección manual del golden path B2 (merge automático cross-cloud). Complementa entregables_hito3/08_..._Plan_Puesta_En_Escena.md §5 y el script run_golden_path_b2.sh. Pensada para correrse EN ORDEN: 1 -> 2 -> 3.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "https://d3bwcvwjy9.execute-api.us-east-1.amazonaws.com/demo" },
+    { "key": "survivor_empi_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "0. Health check",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/health"
+      }
+    },
+    {
+      "name": "1. Registrar survivor (Flujo A, PORTAL, con DNI)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.collectionVariables.set('survivor_empi_id', body.empi_id);",
+              "pm.test('decision es REGISTERED o LINKED', () => {",
+              "  pm.expect(['REGISTERED','LINKED']).to.include(body.decision);",
+              "});",
+              "console.log('survivor_empi_id ->', body.empi_id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dni\": \"45678912\",\n  \"given_name\": \"Juan Carlos\",\n  \"family_name\": \"Quispe Mamani\",\n  \"birth_date\": \"1988-04-12\",\n  \"gender\": \"male\",\n  \"phone\": \"+51987654321\",\n  \"email\": \"jc.quispe@correo.pe\",\n  \"source_system\": \"PORTAL\",\n  \"verification_status\": \"VERIFICADO\",\n  \"identifiers\": [\n    { \"type\": \"PID\", \"value\": \"PT-99182\", \"use\": \"secondary\" }\n  ]\n}"
+        },
+        "url": "{{base_url}}/patients"
+      }
+    },
+    {
+      "name": "2. Registrar entrante SIN DNI (dispara B2 / MERGED)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('decision es MERGED (B2)', () => {",
+              "  pm.expect(body.decision).to.eql('MERGED');",
+              "});",
+              "pm.test('survivor_empi_id coincide con el paso 1', () => {",
+              "  pm.expect(body.survivor_empi_id).to.eql(pm.collectionVariables.get('survivor_empi_id'));",
+              "});",
+              "console.log('match_score ->', body.match_score);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"given_name\": \"Juan Carlos\",\n  \"family_name\": \"Quispe Mamani\",\n  \"birth_date\": \"1988-04-12\",\n  \"gender\": \"male\",\n  \"phone\": \"+51987654321\",\n  \"source_system\": \"HCE\",\n  \"verification_status\": \"INCOMPLETO\",\n  \"identifiers\": [\n    { \"type\": \"HIST\", \"value\": \"HIST-SEDE3-77123\", \"assigning_sede\": \"SEDE-3\", \"use\": \"official\" }\n  ]\n}"
+        },
+        "url": "{{base_url}}/patients",
+        "description": "OJO: sin campo 'dni'. Si lo agregas y coincide con el del paso 1, el Paso 1 del matcher (lookup exacto) resuelve LINKED antes de llegar al blocking biografico, y nunca ves el B2 real."
+      }
+    },
+    {
+      "name": "3. Leer golden record del survivor (consolidado)",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/patients/{{survivor_empi_id}}"
+      }
+    }
+  ]
+}

@@ -63,9 +63,10 @@ resource "aws_iam_role" "task" {
 }
 
 data "aws_iam_policy_document" "task" {
-  # Acceso al bus solo si MSK está habilitado.
+  # Acceso al bus solo si MSK Serverless (gestionado) está habilitado. El bus self-hosted
+  # (Redpanda) no usa IAM: el perímetro lo da el security group.
   dynamic "statement" {
-    for_each = var.enable_msk ? [1] : []
+    for_each = local.use_kafka_managed ? [1] : []
     content {
       sid = "KafkaConnect"
       actions = [
@@ -88,6 +89,18 @@ data "aws_iam_policy_document" "task" {
     sid       = "ReadSsmRuntime"
     actions   = ["ssm:GetParameters", "ssm:GetParameter", "ssm:GetParametersByPath"]
     resources = ["arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/empi/${var.environment}/*"]
+  }
+  # Canal del agente ECS Exec (Fase 4: psql de evidencia contra RDS privado sin bastión,
+  # ver entregables_hito3/07_Scripts_Modelo_Datos/demo/).
+  statement {
+    sid = "EcsExecChannel"
+    actions = [
+      "ssmmessages:CreateControlChannel",
+      "ssmmessages:CreateDataChannel",
+      "ssmmessages:OpenControlChannel",
+      "ssmmessages:OpenDataChannel",
+    ]
+    resources = ["*"]
   }
 }
 

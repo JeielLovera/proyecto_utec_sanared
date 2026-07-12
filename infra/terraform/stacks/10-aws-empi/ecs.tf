@@ -41,11 +41,14 @@ resource "aws_ecs_task_definition" "empi" {
     environment = [
       { name = "EMPI_ENVIRONMENT", value = var.environment },
       { name = "EMPI_MIGRATE", value = "true" }, # aplica el esquema al arranque (VPC)
-      { name = "EMPI_BUS_BACKEND", value = "noop" },
+      { name = "EMPI_BUS_BACKEND", value = var.enable_msk ? "kafka" : "noop" },
+      { name = "EMPI_KAFKA_AUTH", value = var.use_self_hosted_kafka ? "plaintext" : "iam" },
+      { name = "EMPI_KAFKA_REGION", value = data.aws_region.current.name },
+      { name = "EMPI_KAFKA_REPLICATION_FACTOR", value = var.use_self_hosted_kafka ? "1" : "2" },
     ]
 
     # Inyección segura: partes de conexión + umbrales desde SSM/Secrets.
-    secrets = [
+    secrets = concat([
       { name = "EMPI_DB_HOST", valueFrom = aws_ssm_parameter.db_host.arn },
       { name = "EMPI_DB_PORT", valueFrom = aws_ssm_parameter.db_port.arn },
       { name = "EMPI_DB_NAME", valueFrom = aws_ssm_parameter.db_name.arn },
@@ -54,7 +57,9 @@ resource "aws_ecs_task_definition" "empi" {
       { name = "EMPI_MODEL_VERSION", valueFrom = aws_ssm_parameter.model_version.arn },
       { name = "EMPI_DB_USER", valueFrom = "${local.rds_secret_arn}:username::" },
       { name = "EMPI_DB_PASSWORD", valueFrom = "${local.rds_secret_arn}:password::" },
-    ]
+      ], var.enable_msk ? [
+      { name = "EMPI_KAFKA_BOOTSTRAP", valueFrom = local.bus_bootstrap_ssm_arn },
+    ] : [])
 
     logConfiguration = {
       logDriver = "awslogs"
@@ -73,6 +78,9 @@ resource "aws_ecs_service" "empi" {
   task_definition = aws_ecs_task_definition.empi.arn
   desired_count   = var.environment == "prod" ? 2 : 1
   launch_type     = "FARGATE"
+  # ECS Exec: permite `aws ecs execute-command` para correr psql de evidencia contra RDS
+  # (privado, sin bastión) durante el golden path B2 (Fase 4).
+  enable_execute_command = true
 
   network_configuration {
     subnets          = module.network.private_subnet_ids

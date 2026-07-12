@@ -1,0 +1,288 @@
+Listening on ports 8080 for http, and 8443 for https.
+{
+    "path": "/adt",
+    "headers": {
+        "accept-encoding": "identity",
+        "content-length": "202",
+        "host": "10.30.3.4:8080",
+        "user-agent": "Python-urllib/3.11",
+        "content-type": "application/hl7-v2",
+        "connection": "close"
+    },
+    "method": "POST",
+    "body": "MSH|^~\\&|SANARED-EMPI|SANARED|HCE|SANARED|20260712024846||ADT^A28|019f53a2-a34c-71a4-bee0-0f5099225441|P|2.5\rEVN||20260712024846\rPID|1||EMPI-20260712-F8FFD820^^^SANARED-EMPI~50000001^^^RENIEC||||||||||\r",
+    "fresh": false,
+    "hostname": "10.30.3.4",
+    "ip": "::ffff:10.30.3.5",
+    "ips": [],
+    "protocol": "http",
+    "query": {},
+    "subdomains": [],
+    "xhr": false,
+    "os": {
+        "hostname": "SandboxHost-639194122432501721"
+    },
+    "connection": {}
+}
+::ffff:10.30.3.5 - - [12/Jul/2026:02:48:46 +0000] "POST /adt HTTP/1.1" 200 725 "-" "Python-urllib/3.11"
+{
+    "path": "/adt",
+    "headers": {
+        "accept-encoding": "identity",
+        "content-length": "202",
+        "host": "10.30.3.4:8080",
+        "user-agent": "Python-urllib/3.11",
+        "content-type": "application/hl7-v2",
+        "connection": "close"
+    },
+    "method": "POST",
+    "body": "MSH|^~\\&|SANARED-EMPI|SANARED|HCE|SANARED|20260712024846||ADT^A28|019f53a2-a549-72b2-a905-76291a31e003|P|2.5\rEVN||20260712024846\rPID|1||EMPI-20260712-C9D993EE^^^SANARED-EMPI~50000002^^^RENIEC||||||||||\r",
+    "fresh": false,
+    "hostname": "10.30.3.4",
+    "ip": "::ffff:10.30.3.5",
+    "ips": [],
+    "protocol": "http",
+    "query": {},
+    "subdomains": [],
+    "xhr": false,
+    "os": {
+        "hostname": "SandboxHost-639194122432501721"
+    },
+    "connection": {}
+}
+::ffff:10.30.3.5 - - [12/Jul/2026:02:48:46 +0000] "POST /adt HTTP/1.1" 200 725 "-" "Python-urllib/3.11"
+{
+    "path": "/adt",
+    "headers": {
+        "accept-encoding": "identity",
+        "content-length": "202",
+        "host": "10.30.3.4:8080",
+        "user-agent": "Python-urllib/3.11",
+        "content-type": "application/hl7-v2",
+        "connection": "close"
+    },
+    "method": "POST",
+    "body": "MSH|^~\\&|SANARED-EMPI|SANARED|HCE|SANARED|20260712024846||ADT^A28|019f539c-e6c8-7aaa-88ce-cadf6c4bb651|P|2.5\rEVN||20260712024846\rPID|1||EMPI-20260711-38354D5B^^^SANARED-EMPI~45678999^^^RENIEC||||||||||\r",
+    "fresh": false,
+    "hostname": "10.30.3.4",
+    "ip": "::ffff:10.30.3.5",
+    "ips": [],
+    "protocol": "http",
+    "query": {},
+    "subdomains": [],
+    "xhr": false,
+    "os": {
+        "hostname": "SandboxHost-639194122432501721"
+    },
+    "connection": {}
+}
+::ffff:10.30.3.5 - - [12/Jul/2026:02:48:46 +0000] "POST /adt HTTP/1.1" 200 725 "-" "Python-urllib/3.11"
+{
+    "path": "/adt",
+    "headers": {
+        "accept-encoding": "identity",
+        "content-length": "244",
+        "host": "10.30.3.4:8080",
+        "user-agent": "Python-urllib/3.11",
+        "content-type": "application/hl7-v2",
+        "connection": "close"
+    },
+    "method": "POST",
+    "body": "MSH|^~\\&|SANARED-EMPI|SANARED|HCE|SANARED|20260712024846||ADT^A40|019f53a2-a550-7367-bfec-6af53f937ed7|P|2.5\rEVN||20260712024846\rPID|1||EMPI-20260712-F8FFD820^^^SANARED-EMPI||||||||||\rMRG|EMPI-20260712-C9D993EE^^^SANARED-EMPI~50000002^^^RENIEC\r",
+    "fresh": false,
+    "hostname": "10.30.3.4",
+    "ip": "::ffff:10.30.3.5",
+    "ips": [],
+    "protocol": "http",
+    "query": {},
+    "subdomains": [],
+    "xhr": false,
+    "os": {
+        "hostname": "SandboxHost-639194122432501721"
+    },
+    "connection": {}
+}
+::ffff:10.30.3.5 - - [12/Jul/2026:02:48:46 +0000] "POST /adt HTTP/1.1" 200 768 "-" "Python-urllib/3.11"
+{
+    "path": "/adt",
+    "headers": {
+        "accept-encoding": "identity",
+        "content-length": "202",
+        "host": "10.30.3.4:8080",
+        "user-agent": "Python-urllib/3.11",
+        "content-type": "application/hl7-v2",
+        "connection": "close"
+    },
+    "method": "POST",
+    "body": "MSH|^~\\&|SANARED-EMPI|SANARED|HCE|SANARED|20260712030157||ADT^A28|019f5446-3ec6-77b9-8f4d-fd5f32d674ef|P|2.5\rEVN||20260712030157\rPID|1||EMPI-20260712-BD5CBC2A^^^SANARED-EMPI~83825316^^^RENIEC||||||||||\r",
+    "fresh": false,
+    "hostname": "10.30.3.4",
+    "ip": "::ffff:10.30.3.5",
+    "ips": [],
+    "protocol": "http",
+    "query": {},
+    "subdomains": [],
+    "xhr": false,
+    "os": {
+        "hostname": "SandboxHost-639194122432501721"
+    },
+    "connection": {}
+}
+::ffff:10.30.3.5 - - [12/Jul/2026:03:01:57 +0000] "POST /adt HTTP/1.1" 200 725 "-" "Python-urllib/3.11"
+{
+    "path": "/adt",
+    "headers": {
+        "accept-encoding": "identity",
+        "content-length": "202",
+        "host": "10.30.3.4:8080",
+        "user-agent": "Python-urllib/3.11",
+        "content-type": "application/hl7-v2",
+        "connection": "close"
+    },
+    "method": "POST",
+    "body": "MSH|^~\\&|SANARED-EMPI|SANARED|HCE|SANARED|20260712030224||ADT^A28|019f5446-a6d5-7bbd-8d1a-2be6ee47d8e1|P|2.5\rEVN||20260712030224\rPID|1||EMPI-20260712-2120C47E^^^SANARED-EMPI~83825338^^^RENIEC||||||||||\r",
+    "fresh": false,
+    "hostname": "10.30.3.4",
+    "ip": "::ffff:10.30.3.5",
+    "ips": [],
+    "protocol": "http",
+    "query": {},
+    "subdomains": [],
+    "xhr": false,
+    "os": {
+        "hostname": "SandboxHost-639194122432501721"
+    },
+    "connection": {}
+}
+::ffff:10.30.3.5 - - [12/Jul/2026:03:02:24 +0000] "POST /adt HTTP/1.1" 200 725 "-" "Python-urllib/3.11"
+{
+    "path": "/adt",
+    "headers": {
+        "accept-encoding": "identity",
+        "content-length": "202",
+        "host": "10.30.3.4:8080",
+        "user-agent": "Python-urllib/3.11",
+        "content-type": "application/hl7-v2",
+        "connection": "close"
+    },
+    "method": "POST",
+    "body": "MSH|^~\\&|SANARED-EMPI|SANARED|HCE|SANARED|20260712030225||ADT^A28|019f5446-aaee-7cdc-85b2-d701ce152b4e|P|2.5\rEVN||20260712030225\rPID|1||EMPI-20260712-7949A1CC^^^SANARED-EMPI~83825339^^^RENIEC||||||||||\r",
+    "fresh": false,
+    "hostname": "10.30.3.4",
+    "ip": "::ffff:10.30.3.5",
+    "ips": [],
+    "protocol": "http",
+    "query": {},
+    "subdomains": [],
+    "xhr": false,
+    "os": {
+        "hostname": "SandboxHost-639194122432501721"
+    },
+    "connection": {}
+}
+::ffff:10.30.3.5 - - [12/Jul/2026:03:02:25 +0000] "POST /adt HTTP/1.1" 200 725 "-" "Python-urllib/3.11"
+{
+    "path": "/adt",
+    "headers": {
+        "accept-encoding": "identity",
+        "content-length": "244",
+        "host": "10.30.3.4:8080",
+        "user-agent": "Python-urllib/3.11",
+        "content-type": "application/hl7-v2",
+        "connection": "close"
+    },
+    "method": "POST",
+    "body": "MSH|^~\\&|SANARED-EMPI|SANARED|HCE|SANARED|20260712030225||ADT^A40|019f5446-aaf5-7058-89ff-e8bf1c065ff0|P|2.5\rEVN||20260712030225\rPID|1||EMPI-20260712-2120C47E^^^SANARED-EMPI||||||||||\rMRG|EMPI-20260712-7949A1CC^^^SANARED-EMPI~83825339^^^RENIEC\r",
+    "fresh": false,
+    "hostname": "10.30.3.4",
+    "ip": "::ffff:10.30.3.5",
+    "ips": [],
+    "protocol": "http",
+    "query": {},
+    "subdomains": [],
+    "xhr": false,
+    "os": {
+        "hostname": "SandboxHost-639194122432501721"
+    },
+    "connection": {}
+}
+::ffff:10.30.3.5 - - [12/Jul/2026:03:02:25 +0000] "POST /adt HTTP/1.1" 200 768 "-" "Python-urllib/3.11"
+{
+    "path": "/adt",
+    "headers": {
+        "accept-encoding": "identity",
+        "content-length": "228",
+        "host": "10.30.3.4:8080",
+        "user-agent": "Python-urllib/3.11",
+        "content-type": "application/hl7-v2",
+        "connection": "close"
+    },
+    "method": "POST",
+    "body": "MSH|^~\\&|SANARED-EMPI|SANARED|HCE|SANARED|20260712035456||ADT^A28|019f5476-bff4-7b9e-88f3-c6cb7a78ab27|P|2.5\rEVN||20260712035456\rPID|1||EMPI-20260712-0709E2B5^^^SANARED-EMPI~45678912^^^RENIEC~PT-99182^^^SANARED-PORTAL||||||||||\r",
+    "fresh": false,
+    "hostname": "10.30.3.4",
+    "ip": "::ffff:10.30.3.5",
+    "ips": [],
+    "protocol": "http",
+    "query": {},
+    "subdomains": [],
+    "xhr": false,
+    "os": {
+        "hostname": "SandboxHost-639194122432501721"
+    },
+    "connection": {}
+}
+::ffff:10.30.3.5 - - [12/Jul/2026:03:54:56 +0000] "POST /adt HTTP/1.1" 200 751 "-" "Python-urllib/3.11"
+{
+    "path": "/adt",
+    "headers": {
+        "accept-encoding": "identity",
+        "content-length": "215",
+        "host": "10.30.3.4:8080",
+        "user-agent": "Python-urllib/3.11",
+        "content-type": "application/hl7-v2",
+        "connection": "close"
+    },
+    "method": "POST",
+    "body": "MSH|^~\\&|SANARED-EMPI|SANARED|HCE|SANARED|20260712035705||ADT^A28|019f5478-b8a4-7250-9549-a1c8c5e9c4a7|P|2.5\rEVN||20260712035705\rPID|1||EMPI-20260712-7097CB2B^^^SANARED-EMPI~HIST-SEDE3-77123^^^SANARED-HCE||||||||||\r",
+    "fresh": false,
+    "hostname": "10.30.3.4",
+    "ip": "::ffff:10.30.3.5",
+    "ips": [],
+    "protocol": "http",
+    "query": {},
+    "subdomains": [],
+    "xhr": false,
+    "os": {
+        "hostname": "SandboxHost-639194122432501721"
+    },
+    "connection": {}
+}
+::ffff:10.30.3.5 - - [12/Jul/2026:03:57:05 +0000] "POST /adt HTTP/1.1" 200 738 "-" "Python-urllib/3.11"
+{
+    "path": "/adt",
+    "headers": {
+        "accept-encoding": "identity",
+        "content-length": "257",
+        "host": "10.30.3.4:8080",
+        "user-agent": "Python-urllib/3.11",
+        "content-type": "application/hl7-v2",
+        "connection": "close"
+    },
+    "method": "POST",
+    "body": "MSH|^~\\&|SANARED-EMPI|SANARED|HCE|SANARED|20260712035705||ADT^A40|019f5478-b8b2-7d55-ab77-440b66b1c65f|P|2.5\rEVN||20260712035705\rPID|1||EMPI-20260712-0709E2B5^^^SANARED-EMPI||||||||||\rMRG|EMPI-20260712-7097CB2B^^^SANARED-EMPI~HIST-SEDE3-77123^^^SANARED-HCE\r",
+    "fresh": false,
+    "hostname": "10.30.3.4",
+    "ip": "::ffff:10.30.3.5",
+    "ips": [],
+    "protocol": "http",
+    "query": {},
+    "subdomains": [],
+    "xhr": false,
+    "os": {
+        "hostname": "SandboxHost-639194122432501721"
+    },
+    "connection": {}
+}
+::ffff:10.30.3.5 - - [12/Jul/2026:03:57:05 +0000] "POST /adt HTTP/1.1" 200 781 "-" "Python-urllib/3.11"
+

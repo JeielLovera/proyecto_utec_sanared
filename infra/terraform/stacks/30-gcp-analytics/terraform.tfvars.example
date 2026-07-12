@@ -8,3 +8,12 @@ aws_cidr    = "10.20.0.0/16"
 
 enable_healthcare_api = true
 consumer_image        = ""             # vacío = imagen placeholder hasta el primer build/push
+
+# Golden path cross-cloud real (opcional, requiere 10-aws-empi + 40-xcloud-net aplicados).
+# Copia los 3 valores del output de 40-xcloud-net (ver DEPLOYMENT.md). Con kafka_bootstrap
+# no vacío, Cloud Run queda always-on (min_instance_count=1) para el consumidor de fondo.
+kafka_bootstrap       = ""
+aws_access_key_id     = ""
+aws_secret_access_key = ""
+# Solo si usas credenciales TEMPORALES (AWS Academy Learner Lab, ~4h de vigencia).
+aws_session_token = ""

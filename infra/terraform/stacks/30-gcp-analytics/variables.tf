@@ -46,3 +46,36 @@ variable "consumer_image" {
   type        = string
   default     = ""
 }
+
+variable "kafka_bootstrap" {
+  description = "Bootstrap del bus (host:port). Output kafka_bootstrap de 10-aws-empi."
+  type        = string
+  default     = ""
+}
+
+variable "kafka_auth_mode" {
+  description = "iam (MSK Serverless real) | plaintext (Redpanda self-hosted, sin credencial AWS). Output kafka_auth_mode de 10-aws-empi."
+  type        = string
+  default     = "iam"
+}
+
+variable "aws_access_key_id" {
+  description = "Access key del usuario IAM de solo-consumo del bus (output kafka_xcloud_access_key_id de 10-aws-empi)."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "aws_secret_access_key" {
+  description = "Secret de la access key anterior (output kafka_xcloud_secret_access_key de 10-aws-empi)."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "aws_session_token" {
+  description = "Session token, SOLO si usas credenciales temporales (p. ej. AWS Academy Learner Lab, ~4h de vigencia) en vez de un usuario IAM dedicado. Vacío si usas access key permanente."
+  type        = string
+  default     = ""
+  sensitive   = true
+}

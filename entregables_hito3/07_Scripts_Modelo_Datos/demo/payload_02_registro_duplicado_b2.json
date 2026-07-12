@@ -1,0 +1,12 @@
+{
+  "given_name": "Juan Carlos",
+  "family_name": "Quispe Mamani",
+  "birth_date": "1988-04-12",
+  "gender": "male",
+  "phone": "+51987654321",
+  "source_system": "HCE",
+  "verification_status": "INCOMPLETO",
+  "identifiers": [
+    { "type": "HIST", "value": "HIST-SEDE3-77123", "assigning_sede": "SEDE-3", "use": "official" }
+  ]
+}

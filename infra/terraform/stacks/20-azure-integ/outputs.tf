@@ -1,9 +1,9 @@
 output "resource_group_name" {
-  value = azurerm_resource_group.empi.name
+  value = local.rg_name
 }
 
 output "location" {
-  value = azurerm_resource_group.empi.location
+  value = local.rg_location
 }
 
 output "vnet_id" {
@@ -21,7 +21,7 @@ output "gateway_subnet_id" {
 }
 
 output "function_app_name" {
-  value = azurerm_linux_function_app.adapter.name
+  value = var.enable_function_app ? azurerm_linux_function_app.adapter[0].name : null
 }
 
 output "hce_mock_ip" {
@@ -29,6 +29,20 @@ output "hce_mock_ip" {
   value       = azurerm_container_group.hce.ip_address
 }
 
+output "hce_mock_container_name" {
+  description = "Nombre del ACI del HCE simulado (para `az container logs`, evidencia ADT^A40, Fase 4)."
+  value       = azurerm_container_group.hce.name
+}
+
 output "apim_gateway_url" {
   value = var.enable_apim ? azurerm_api_management.empi[0].gateway_url : null
+}
+
+output "acr_login_server" {
+  description = "Registro del consumidor HL7 (docker build/push + az acr login)."
+  value       = var.enable_kafka_consumer ? azurerm_container_registry.empi[0].login_server : null
+}
+
+output "hl7_consumer_name" {
+  value = var.enable_kafka_consumer ? azurerm_container_group.hl7_consumer[0].name : null
 }

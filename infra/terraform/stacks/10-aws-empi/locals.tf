@@ -28,4 +28,16 @@ locals {
   }
 
   this = local.profile[var.environment]
+
+  # Modo del bus: gestionado (MSK Serverless) vs self-hosted (Redpanda en ECS, cuentas
+  # que bloquean kafka:CreateClusterV2, p. ej. Learner Lab). Mutuamente excluyentes.
+  use_kafka_managed    = var.enable_msk && !var.use_self_hosted_kafka
+  use_kafka_selfhosted = var.enable_msk && var.use_self_hosted_kafka
+
+  # ARN del parámetro SSM con el bootstrap del bus, sea cual sea el modo activo.
+  bus_bootstrap_ssm_arn = (
+    local.use_kafka_managed ? try(aws_ssm_parameter.bus_bootstrap[0].arn, null) :
+    local.use_kafka_selfhosted ? try(aws_ssm_parameter.bus_bootstrap_selfhosted[0].arn, null) :
+    null
+  )
 }

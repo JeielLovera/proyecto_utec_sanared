@@ -17,9 +17,9 @@ Los entregables del hito son dos (IaC + ejecución de flujo), pero entre ellos e
 
 | Capa | Qué es | Artefacto | Estado |
 |---|---|---|---|
-| **1. IaC (Terraform)** | Provisiona la infraestructura multinube TO-BE | `infra/terraform/` | 🟡 en construcción (Fase 0+1 AWS) |
-| **2. Código de la solución** | Servicio EMPI (FastAPI + proyector CQRS); adaptadores HL7 (Azure), consumidores (GCP) por crear | `services/empi-service/` | 🟢 servicio EMPI verificado; adaptadores pendientes |
-| **3. Ejecución del flujo** | Correr el golden path B2 sobre 1+2 | script de demo + evidencias | 🟡 Flujo A/B1/B2/B3 corren local; falta cross-cloud |
+| **1. IaC (Terraform)** | Provisiona la infraestructura multinube TO-BE | `infra/terraform/` | 🟢 4 stacks aplicados contra cuentas de laboratorio reales (AWS+Azure+GCP) |
+| **2. Código de la solución** | Servicio EMPI (FastAPI + proyector CQRS); adaptadores HL7 (Azure), consumidores (GCP) | `services/empi-service/` | 🟢 verificado local y contra la nube real (golden path B2) |
+| **3. Ejecución del flujo** | Correr el golden path B2 sobre 1+2 | script de demo + evidencias | 🟢 ejecutado contra la nube real (2026-07-12) y verificado también manualmente por Postman; ver §7 y `demo/evidencias/` |
 
 > El **modelo de datos y los scripts** ya generados (`07_Scripts_Modelo_Datos/`: `sql/`, `schemas/`, `opensearch/`, `bigquery/`) son el **cimiento de la capa 2**: el RDS se inicializa con `sql/`, y los `schemas/` son el contrato del bus. Se empieza con ventaja.
 
@@ -173,9 +173,9 @@ sequenceDiagram
 
 ---
 
-## 7. Estado de avance (a 2026-07-11)
+## 7. Estado de avance (a 2026-07-12)
 
-Validado con `terraform validate` (Terraform 1.9.8). **Aún sin `apply`** (requiere credenciales de nube) → **sin costo incurrido**.
+Los 4 stacks (`10-aws-empi`, `20-azure-integ`, `30-gcp-analytics`, `40-xcloud-net`) se **aplicaron contra cuentas de laboratorio reales** (AWS Academy Learner Lab, Azure for Students, GCP), se ejecutó el golden path B2 (evidencia abajo) y **ya se destruyeron** (orden inverso, DEPLOYMENT.md §8) — sin costo en curso. El bucket de estado (`bootstrap`) se conserva, por lo que la misma topología se puede volver a levantar con `terraform apply` en cualquier momento.
 
 | Fase | Componente | Estado |
 |---|---|---|
@@ -194,7 +194,12 @@ Validado con `terraform validate` (Terraform 1.9.8). **Aún sin `apply`** (requi
 | **Capa 2** | consumidor GCP (`services/gcp-consumer/`: re-tag DICOM + refresh `patient_360`) | ✅ construido · **verificado** (pytest 5/5) |
 | 3 | `30-gcp-analytics` (VPC, Healthcare API/DICOM, BigQuery 360, Cloud Run, Artifact Registry) | ✅ escrito · `validate` OK |
 | 3 | `40-xcloud-net` — tramo AWS↔GCP (Classic VPN, mismo VGW) | ✅ escrito · `validate` OK |
-| 4 | Golden path B2 + demo reproducible | ⬜ pendiente |
+| **Capa 2** | Redis cache-aside (Paso 1 real) + productor Kafka real (`bus.py`, dual IAM/plaintext) | ✅ construido · **verificado** (hit/miss real + mensajes leídos por un consumidor independiente) |
+| **Capa 2** | consumidores standalone (`kafka_consumer.py` en HL7 y GCP) | ✅ construidos · **verificados E2E local**: productor→bus real (Redpanda)→ambos consumidores; HL7 entregó `ADT^A40` al HCE mock con `200 OK`; GCP generó plan de re-tag + fila `patient_360` |
+| 4 | IaC del wiring cross-cloud: bootstrap MSK real, usuario IAM de solo-consumo, ACI persistente (Azure), Cloud Run always-on (GCP) | ✅ escrito · `validate` OK (5 stacks) |
+| 4 | ECS Exec (evidencia RDS sin bastión: `enable_execute_command` + permiso `ssmmessages:*Channel`) | ✅ escrito (`10-aws-empi/ecs.tf`, `iam.tf`) |
+| 4 | Demo reproducible (seed sintético `es_PE` + script + evidencias) | ✅ escrito: `entregables_hito3/07_Scripts_Modelo_Datos/demo/` (`run_golden_path_b2.sh`, 2 payloads, colección Postman para prueba manual) |
+| 4 | **Golden path B2 contra la nube real** | ✅ **ejecutado y verificado** (2026-07-12, `run_20260712T035642Z`): `POST /patients` sin DNI resolvió `decision=MERGED, match_score=1.0` contra el survivor `EMPI-20260712-0709E2B5`; evidencia real en las 3 nubes — RDS (`golden_record_view`/`patient_crosswalk_view`/`audit_trail` vía ECS Exec), Azure (`ADT^A40`+`MRG` recibido por el HCE mock), GCP (fila `patient_360` refrescada por Cloud Run). Ver `demo/evidencias/run_20260712T035642Z/`. |
 
 **Fidelidad al modelo (ya en el IaC):** cifrado KMS en todo el plano de datos (RNF-03 / Ley 29733); RDS/Redis/OpenSearch/MSK en **subredes privadas**; umbrales `0.95/0.85` en SSM (configurables en caliente, RNF-06.2); *security groups* least-privilege (solo la app alcanza los datos) con hueco `9098` para consumidores cross-cloud (Azure/GCP).
 

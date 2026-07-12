@@ -88,7 +88,10 @@ terraform apply
 | 3 | `30-gcp-analytics` (VPC, Healthcare API/DICOM, BigQuery 360, Cloud Run, Artifact Registry) | ✅ escrito y `validate` OK |
 | 3 | `40-xcloud-net` — tramo AWS↔GCP (Classic VPN, mismo VGW) | ✅ escrito y `validate` OK |
 | 3 | `services/gcp-consumer/` (re-tag DICOM + refresh patient_360) | ✅ construido y **verificado** (pytest 5/5) |
-| 4 | Golden path B2 + demo reproducible | ⬜ pendiente |
+| 4 | **Wiring real del bus**: Redis cache-aside, productor Kafka (`bus.py`), consumidores standalone HL7/GCP | ✅ construido y **verificado E2E local** (Redpanda: productor→bus→ambos consumidores, HL7 entregó `ADT^A40` al HCE mock con `200 OK`) |
+| 4 | IaC del wiring: `data.aws_msk_bootstrap_brokers`, usuario IAM cross-cloud, ACI consumidor HL7 (Azure), Cloud Run always-on (GCP) | ✅ escrito y `validate` OK (5 stacks) |
+| 4 | Golden path B2 contra la nube real (credenciales de laboratorio) | ⬜ pendiente |
+| 4 | Demo reproducible (seed sintético + script + evidencias) | ⬜ pendiente |
 
 > `terraform validate` corre OK con Terraform 1.9.8. Falta `terraform plan/apply` real
 > (requiere credenciales AWS) y el escaneo `checkov`.

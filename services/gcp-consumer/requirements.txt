@@ -1,4 +1,6 @@
 flask==3.*
 gunicorn==22.*
 google-cloud-bigquery==3.*
-google-cloud-healthcare==2.*
+google-api-python-client==2.*
+confluent-kafka==2.*
+aws-msk-iam-sasl-signer-python==1.*

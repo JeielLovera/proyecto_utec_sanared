@@ -67,10 +67,28 @@ docker run -p 8000:8000 \
 | Var | Default | Uso |
 |---|---|---|
 | `EMPI_DATABASE_URL` | `postgresql://postgres:empi@localhost:5432/postgres` | RDS |
-| `EMPI_REDIS_URL` | — | caché (§4.2, opcional) |
-| `EMPI_BUS_BACKEND` | `noop` | `kafka` en Fase 2/3 |
+| `EMPI_REDIS_URL` | — | caché (§4.2). Paso 1 real (cache-aside); sin ella, cae a SQL directo |
+| `EMPI_BUS_BACKEND` | `noop` | `kafka` publica de verdad (ver abajo) |
+| `EMPI_KAFKA_BOOTSTRAP` | — | requerido si `bus_backend=kafka` |
+| `EMPI_KAFKA_AUTH` | `iam` | `iam` (MSK Serverless real, SASL/OAUTHBEARER) \| `plaintext` (Kafka/Redpanda local) |
+| `EMPI_KAFKA_REPLICATION_FACTOR` | `2` | baja a `1` para un broker único (pruebas locales) |
 | `EMPI_THRESHOLD_AUTO` / `EMPI_THRESHOLD_REVIEW` | `0.95` / `0.85` | umbrales (SSM en prod) |
 | `EMPI_MODEL_VERSION` | `fs-2026.1` | versión del modelo |
+
+## Paso 1 real (Redis) y bus real (Kafka)
+
+- **Redis**: `app/cache.py` implementa cache-aside real — `empi:dni:{sha256(dni)}` (nunca el
+  DNI en claro, §10), TTL 5 min, *fail-open* si Redis cae. Verificado con Postgres+Redis en
+  Docker: el segundo alta con el mismo DNI resuelve por Redis (confirmable con
+  `redis-cli GET empi:dni:<sha256>`).
+- **Kafka**: `app/bus.py` (`KafkaBus`) publica de verdad con `confluent-kafka` +
+  `aws-msk-iam-sasl-signer-python`. Crea los topics `identity.patient.*` si no existen
+  (MSK Serverless no los autocrea). Verificado E2E contra Redpanda local (modo
+  `plaintext`): los mensajes se leyeron de vuelta con un consumidor independiente, y el
+  adaptador HL7 + el consumidor GCP standalone los consumieron generando `ADT^A40`/re-tag
+  DICOM reales (ver `services/hl7-adapter/` y `services/gcp-consumer/`).
+- Contra **MSK Serverless real** (modo `iam`), la credencial la resuelve
+  `aws-msk-iam-sasl-signer` desde el rol de la tarea ECS — sin cambios de código.
 
 ## Estado
 
