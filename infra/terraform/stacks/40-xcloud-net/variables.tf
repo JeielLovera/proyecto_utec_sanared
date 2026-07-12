@@ -30,9 +30,8 @@ variable "state_region" {
 }
 
 variable "shared_key" {
-  description = "Pre-shared key IPSec (debe coincidir en ambos lados). 8-64 chars."
+  description = "Pre-shared key IPSec (debe coincidir en ambos lados). 8-64 chars, no empieza con '0'. Sin default: provee la tuya en terraform.tfvars (no committear el valor real)."
   type        = string
-  default     = "SanaRedEmpiXcloud2026Psk"
   sensitive   = true
 }
 
@@ -60,8 +59,7 @@ variable "gcp_vpc_cidr" {
 }
 
 variable "shared_key_gcp" {
-  description = "Pre-shared key IPSec para el túnel AWS<->GCP."
+  description = "Pre-shared key IPSec para el túnel AWS<->GCP. Sin default: provee la tuya en terraform.tfvars (no committear el valor real)."
   type        = string
-  default     = "SanaRedEmpiXcloudGcp2026Psk"
   sensitive   = true
 }

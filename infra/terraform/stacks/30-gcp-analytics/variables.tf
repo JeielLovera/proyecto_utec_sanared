@@ -47,6 +47,12 @@ variable "consumer_image" {
   default     = ""
 }
 
+variable "consumer_max_instances" {
+  description = "Tope de instancias del consumidor Cloud Run (fijo para evitar drift: sin este valor Google le pone 100 por defecto y cada plan posterior lo marca como cambio)."
+  type        = number
+  default     = 3
+}
+
 variable "kafka_bootstrap" {
   description = "Bootstrap del bus (host:port). Output kafka_bootstrap de 10-aws-empi."
   type        = string

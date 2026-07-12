@@ -10,6 +10,7 @@ enable_apim     = true           # false para pruebas rápidas (APIM tarda ~30-4
 # Copia los 3 valores del output de 40-xcloud-net: bus_bootstrap_sasl_iam,
 # kafka_xcloud_access_key_id, kafka_xcloud_secret_access_key (ver DEPLOYMENT.md).
 enable_kafka_consumer = false
+hl7_consumer_image    = "" # vacío = imagen placeholder hasta el primer build/push
 kafka_bootstrap       = ""
 aws_access_key_id     = ""
 aws_secret_access_key = ""

@@ -22,7 +22,7 @@ resource "azurerm_public_ip" "vpn" {
   allocation_method   = "Static"
   sku                 = "Standard"
   # Los SKUs *AZ del VPN Gateway exigen una IP publica zonal (no zone-redundant por defecto).
-  zones               = ["1", "2", "3"]
+  zones = ["1", "2", "3"]
 }
 
 resource "azurerm_virtual_network_gateway" "vpn" {
@@ -33,9 +33,9 @@ resource "azurerm_virtual_network_gateway" "vpn" {
   vpn_type            = "RouteBased"
   # Azure descontinuó los SKUs no-AZ (VpnGw1-5) para gateways nuevos desde 2024;
   # solo se aceptan los *AZ (zonales), ver NonAzSkusNotAllowedForVPNGateway.
-  sku                 = "VpnGw1AZ"
-  active_active       = false
-  enable_bgp          = false
+  sku           = "VpnGw1AZ"
+  active_active = false
+  enable_bgp    = false
 
   ip_configuration {
     name                          = "vnetGatewayConfig"

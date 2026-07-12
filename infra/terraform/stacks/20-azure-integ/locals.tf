@@ -10,4 +10,10 @@ locals {
   # Resource group: creado o reutilizado (ver create_resource_group, network.tf).
   rg_name     = var.create_resource_group ? azurerm_resource_group.empi[0].name : data.azurerm_resource_group.existing[0].name
   rg_location = var.create_resource_group ? azurerm_resource_group.empi[0].location : data.azurerm_resource_group.existing[0].location
+
+  # Imagen del ACI consumidor HL7: placeholder público hasta el primer build/push real
+  # (mismo patrón que consumer_image en 30-gcp-analytics/locals.tf). Sin esto, el primer
+  # apply con enable_kafka_consumer=true fallaría por ImagePullFailure contra un ACR
+  # recién creado (todavía sin la imagen real).
+  hl7_consumer_image = var.hl7_consumer_image != "" ? var.hl7_consumer_image : "mcr.microsoft.com/azuredocs/aci-helloworld:latest"
 }

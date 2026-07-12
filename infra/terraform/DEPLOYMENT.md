@@ -226,8 +226,8 @@ ACR=$(terraform -chdir=infra/terraform/stacks/20-azure-integ output -raw acr_log
 az acr login --name "${ACR%%.*}"
 docker build -f services/hl7-adapter/Dockerfile -t "$ACR/hl7-adapter:latest" services/hl7-adapter
 docker push "$ACR/hl7-adapter:latest"
-az container restart -g "$(terraform -chdir=infra/terraform/stacks/20-azure-integ output -raw resource_group_name)" \
-  -n "$(terraform -chdir=infra/terraform/stacks/20-azure-integ output -raw hl7_consumer_name)"
+terraform -chdir=infra/terraform/stacks/20-azure-integ apply -var="hl7_consumer_image=$ACR/hl7-adapter:latest"
+#   (el cambio de imagen ya fuerza el redeploy del ACI; no hace falta "az container restart")
 
 #   GCP (Cloud Run consumidor):
 REPO=$(terraform -chdir=infra/terraform/stacks/30-gcp-analytics output -raw artifact_registry_repo)

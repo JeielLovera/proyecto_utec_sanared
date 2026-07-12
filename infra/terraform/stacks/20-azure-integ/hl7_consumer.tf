@@ -33,7 +33,7 @@ resource "azurerm_container_group" "hl7_consumer" {
 
   container {
     name   = "hl7-consumer"
-    image  = "${azurerm_container_registry.empi[0].login_server}/hl7-adapter:latest"
+    image  = local.hl7_consumer_image
     cpu    = "0.5"
     memory = "0.5"
 
@@ -64,8 +64,11 @@ resource "azurerm_container_group" "hl7_consumer" {
   tags = { role = "kafka-consumer", domain = "empi-integration" }
 }
 
-# NOTA de despliegue: la imagen se sube manualmente tras el primer apply:
+# NOTA de despliegue: el primer apply usa la imagen placeholder (local.hl7_consumer_image,
+# ver locals.tf) porque el ACR recién creado está vacío. Tras subir la imagen real:
 #   az acr login --name <login_server sin .azurecr.io>
 #   docker build -f services/hl7-adapter/Dockerfile -t <login_server>/hl7-adapter:latest services/hl7-adapter
 #   docker push <login_server>/hl7-adapter:latest
-#   az container restart -g <resource_group> -n <name_prefix>-hl7-consumer
+#   terraform apply -var="hl7_consumer_image=<login_server>/hl7-adapter:latest"
+#   (o re-aplica dejando hl7_consumer_image en tfvars; no hace falta "az container restart"
+#   aparte porque el cambio de imagen ya fuerza el redeploy del ACI)

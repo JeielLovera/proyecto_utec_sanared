@@ -78,6 +78,12 @@ variable "enable_kafka_consumer" {
   default     = false
 }
 
+variable "hl7_consumer_image" {
+  description = "Imagen del ACI consumidor HL7 (services/hl7-adapter). Vacío = imagen placeholder pública hasta el primer build/push real (mismo patrón que consumer_image en 30-gcp-analytics)."
+  type        = string
+  default     = ""
+}
+
 variable "aws_access_key_id" {
   description = "Access key del usuario IAM de solo-consumo del bus (output kafka_xcloud_access_key_id de 10-aws-empi)."
   type        = string

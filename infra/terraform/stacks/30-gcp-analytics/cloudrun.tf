@@ -31,8 +31,12 @@ resource "google_cloud_run_v2_service" "consumer" {
     # min_instance_count=1: mantiene el contenedor vivo para el hilo de fondo del
     # consumidor Kafka (main.py lo arranca si KAFKA_BOOTSTRAP está seteado). Sin esto,
     # Cloud Run escala a cero y el consumidor no correría de forma continua.
+    # max_instance_count fijo (no lo dejamos en null): si no se fija, Google le pone 100
+    # por defecto al crear el recurso y cada plan posterior lo muestra como drift (100 -> null)
+    # sin que nada haya cambiado.
     scaling {
       min_instance_count = var.kafka_bootstrap != "" ? 1 : 0
+      max_instance_count = var.consumer_max_instances
     }
 
     vpc_access {

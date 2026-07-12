@@ -5,10 +5,10 @@ aws_region      = "us-east-1"
 subscription_id = "" # o ARM_SUBSCRIPTION_ID / az login
 state_bucket    = "sanared-empi-tfstate-REEMPLAZAR_ACCOUNT_ID"
 state_region    = "us-east-1"
-# shared_key    = "..."  # opcional; usa un PSK propio (8-64 chars, no empieza con 0)
+shared_key      = "REEMPLAZAR-PSK-propio-8-64-chars" # obligatorio, no committear el valor real
 azure_vnet_cidr = "10.30.0.0/16"
 
 gcp_project_id  = "TU-PROYECTO-GCP"
 gcp_region      = "us-central1"
 gcp_vpc_cidr    = "10.40.0.0/16"
-# shared_key_gcp = "..."  # opcional; PSK propio (8-64 chars)
+shared_key_gcp  = "REEMPLAZAR-PSK-propio-8-64-chars" # obligatorio, no committear el valor real
