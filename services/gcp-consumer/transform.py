@@ -79,6 +79,16 @@ def build_patient_360_row(
     }
 
 
+def _dni_from_identifiers(identifiers: list[dict]) -> str | None:
+    return next((i["value"] for i in identifiers if i.get("type") == "DNI"), None)
+
+
+def _full_name(name: dict | None) -> str | None:
+    if not name:
+        return None
+    return " ".join(filter(None, [name.get("given"), name.get("family")])) or None
+
+
 def process_event(event: dict) -> dict:
     """Orquesta ambas transformaciones para un evento del bus."""
     retag = dicom_retag_plan(event)
@@ -89,6 +99,13 @@ def process_event(event: dict) -> dict:
         row = build_patient_360_row(empi_id=data["survivor_empi_id"])
     elif event.get("event_type") == "PatientRegistered":
         idents = data.get("identifiers", [])
-        row = build_patient_360_row(empi_id=event["empi_id"], identifiers=idents)
+        row = build_patient_360_row(
+            empi_id=event["empi_id"],
+            dni=_dni_from_identifiers(idents),
+            name=_full_name(data.get("name")),
+            birth_date=data.get("birth_date"),
+            gender=data.get("gender"),
+            identifiers=idents,
+        )
 
     return {"event_type": event.get("event_type"), "dicom_retag": retag, "patient_360_row": row}

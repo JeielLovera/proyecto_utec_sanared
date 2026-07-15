@@ -10,12 +10,15 @@ import http.client
 
 def main() -> int:
     if len(sys.argv) < 6:
-        print("uso: mtls_admision_probe.py <cert> <key> <ca> <host> <path> [method] [body]", file=sys.stderr)
+        print("uso: mtls_admision_probe.py <cert> <key> <ca> <host> <path> [method] [body] [extra_header]", file=sys.stderr)
         return 2
 
     cert_path, key_path, ca_path, host, path = sys.argv[1:6]
     method = sys.argv[6] if len(sys.argv) > 6 else "GET"
     body = sys.argv[7] if len(sys.argv) > 7 else None
+    # p.ej. "traceparent: 00-<trace-id>-<span-id>-01" (W3C Trace Context), para
+    # que el span raíz del request adopte un trace_id conocido de antemano.
+    extra_header = sys.argv[8] if len(sys.argv) > 8 else None
 
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     ctx.load_verify_locations(cafile=ca_path)
@@ -28,6 +31,9 @@ def main() -> int:
 
     body_bytes = body.encode("utf-8") if body else None
     headers = {"content-type": "application/json", "content-length": str(len(body_bytes))} if body_bytes else {}
+    if extra_header and ":" in extra_header:
+        hk, hv = extra_header.split(":", 1)
+        headers[hk.strip()] = hv.strip()
     conn = http.client.HTTPSConnection(host, 443, context=ctx, timeout=15)
     try:
         conn.request(method, path, body=body_bytes, headers=headers)

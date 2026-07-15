@@ -18,7 +18,12 @@ REGISTERED = {
     "event_id": "ev1",
     "event_type": "PatientRegistered",
     "empi_id": "EMPI-20250115-0A11BB22",
-    "data": {"identifiers": [{"system": "urn:pe:reniec:dni", "type": "DNI", "value": "45678912"}]},
+    "data": {
+        "identifiers": [{"system": "urn:pe:reniec:dni", "type": "DNI", "value": "45678912"}],
+        "name": {"given": "Juan Carlos", "family": "Quispe Mamani"},
+        "birth_date": "1988-04-12",
+        "gender": "male",
+    },
 }
 
 
@@ -52,3 +57,13 @@ def test_process_event_registered_genera_row_sin_retag():
     result = process_event(REGISTERED)
     assert result["dicom_retag"] is None
     assert result["patient_360_row"]["empi_id"] == "EMPI-20250115-0A11BB22"
+
+
+def test_process_event_registered_puebla_identity_completa():
+    """El envelope (bus.py::build_envelope) ya no minimiza name/birth_date/gender —
+    deben quedar en identity, no solo el dni dentro de identifiers[]."""
+    row = process_event(REGISTERED)["patient_360_row"]
+    assert row["identity"]["dni"] == "45678912"
+    assert row["identity"]["name"] == "Juan Carlos Quispe Mamani"
+    assert row["identity"]["birth_date"] == "1988-04-12"
+    assert row["identity"]["gender"] == "male"

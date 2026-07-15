@@ -82,3 +82,55 @@ resource "google_bigquery_table" "patient_360" {
     { name = "last_refreshed", type = "TIMESTAMP", mode = "REQUIRED" },
   ])
 }
+
+# =============================================================================
+# Vista consolidada: 1 fila VIGENTE por empi_id.
+#
+# patient_360 es append-only (cada evento inserta, nunca actualiza -- BigQuery
+# streaming insert no tiene upsert nativo). El evento PatientMerged en particular
+# inserta una fila con identity/identifiers vacíos (transform.py solo conoce el
+# empi_id del survivor en ese punto). Esta vista evita que "la última fila gane"
+# borre datos: arrastra el último identity/identifiers NO vacío por empi_id, y
+# usa la fila más reciente para lab_results/imaging_studies/encounters/flags.
+# =============================================================================
+resource "google_bigquery_table" "patient_360_current" {
+  dataset_id          = google_bigquery_dataset.empi.dataset_id
+  table_id            = "patient_360_current"
+  deletion_protection = false
+
+  view {
+    use_legacy_sql = false
+    query          = <<-SQL
+      WITH last_identity AS (
+        SELECT empi_id, identity,
+               ROW_NUMBER() OVER (PARTITION BY empi_id ORDER BY last_refreshed DESC) AS rn
+        FROM `${var.project_id}.${google_bigquery_dataset.empi.dataset_id}.patient_360`
+        WHERE identity.dni IS NOT NULL OR identity.name IS NOT NULL
+      ),
+      last_identifiers AS (
+        SELECT empi_id, identifiers,
+               ROW_NUMBER() OVER (PARTITION BY empi_id ORDER BY last_refreshed DESC) AS rn
+        FROM `${var.project_id}.${google_bigquery_dataset.empi.dataset_id}.patient_360`
+        WHERE ARRAY_LENGTH(identifiers) > 0
+      ),
+      latest_row AS (
+        SELECT empi_id, lab_results, imaging_studies, encounters, flags, last_refreshed,
+               ROW_NUMBER() OVER (PARTITION BY empi_id ORDER BY last_refreshed DESC) AS rn
+        FROM `${var.project_id}.${google_bigquery_dataset.empi.dataset_id}.patient_360`
+      )
+      SELECT
+        l.empi_id,
+        i.identity,
+        idf.identifiers,
+        l.lab_results,
+        l.imaging_studies,
+        l.encounters,
+        l.flags,
+        l.last_refreshed
+      FROM latest_row l
+      LEFT JOIN last_identity i ON i.empi_id = l.empi_id AND i.rn = 1
+      LEFT JOIN last_identifiers idf ON idf.empi_id = l.empi_id AND idf.rn = 1
+      WHERE l.rn = 1
+    SQL
+  }
+}

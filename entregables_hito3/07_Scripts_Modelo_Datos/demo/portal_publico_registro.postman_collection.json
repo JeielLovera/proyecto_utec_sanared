@@ -1,0 +1,78 @@
+{
+  "info": {
+    "name": "SanaRed EMPI — Registro Portal Público (con trazabilidad)",
+    "description": "Registra un paciente nuevo por el Portal público (API Gateway + WAF, Flujo A) para complementar con el registro del MISMO paciente por el Módulo de Admisión (perímetro mTLS interno, ver register_admision_portal_patient.sh). Cada request genera su propio W3C traceparent para poder ubicar la traza en Jaeger/Grafana sin tener que buscarla por servicio+hora.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "https://0f8n1ee28h.execute-api.us-east-1.amazonaws.com/demo" },
+    { "key": "jaeger_ui_url", "value": "http://sanared-obs-demo-ui-nlb-ac0b810d0ab540a8.elb.us-east-1.amazonaws.com:16686" },
+    { "key": "empi_id", "value": "" },
+    { "key": "trace_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "0. Health check",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/health"
+      }
+    },
+    {
+      "name": "1. Registrar paciente (Portal público, con DNI)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "function randHex(len) {",
+              "  let s = '';",
+              "  for (let i = 0; i < len; i++) s += Math.floor(Math.random() * 16).toString(16);",
+              "  return s;",
+              "}",
+              "const traceId = randHex(32);",
+              "const spanId = randHex(16);",
+              "pm.collectionVariables.set('trace_id', traceId);",
+              "pm.request.headers.upsert({ key: 'traceparent', value: `00-${traceId}-${spanId}-01` });",
+              "console.log('traceparent generado -> trace_id =', traceId);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.collectionVariables.set('empi_id', body.empi_id);",
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.test('decision es REGISTERED o LINKED', () => {",
+              "  pm.expect(['REGISTERED','LINKED']).to.include(body.decision);",
+              "});",
+              "const traceId = pm.collectionVariables.get('trace_id');",
+              "const jaegerUrl = pm.collectionVariables.get('jaeger_ui_url');",
+              "console.log('empi_id ->', body.empi_id, '| decision ->', body.decision);",
+              "console.log('Ver traza en Jaeger ->', `${jaegerUrl}/trace/${traceId}`);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dni\": \"58712064\",\n  \"given_name\": \"Sofía Alejandra\",\n  \"family_name\": \"Vega Chumpitaz\",\n  \"birth_date\": \"1994-05-09\",\n  \"gender\": \"female\",\n  \"phone\": \"+51977889900\",\n  \"email\": \"sofia.vega@correo.pe\",\n  \"source_system\": \"PORTAL\",\n  \"verification_status\": \"VERIFICADO\"\n}"
+        },
+        "url": "{{base_url}}/patients",
+        "description": "Mismo paciente que registrará después el Módulo de Admisión vía mTLS (register_admision_portal_patient.sh): mismo given_name/family_name/birth_date/phone, sin dni y source_system=HCE, para que el matcher biográfico lo enlace por blocking en vez de por lookup exacto de DNI."
+      }
+    },
+    {
+      "name": "2. Leer golden record (después de correr también el registro por Admisión)",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/patients/{{empi_id}}"
+      }
+    }
+  ]
+}

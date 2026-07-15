@@ -1,12 +1,13 @@
 # Puesta en escena — Perfil DEMO (cuentas de laboratorio)
 
 Pasos y comandos para levantar el EMPI completo (Flujo A + bus real + golden path B2
-cross-cloud) contra **AWS Academy Learner Lab + Azure for Students + GCP free trial**.
-Es exactamente la secuencia con la que se validó el golden path B2 en la nube real.
+cross-cloud + trazabilidad distribuida) contra **AWS Academy Learner Lab + Azure for
+Students + GCP free trial**. Es exactamente la secuencia con la que se validó el golden
+path B2 en la nube real.
 
 Todos los comandos se corren **desde la raíz del repo** (usan `terraform -chdir=...`).
 
-`terraform destroy` al terminar la sesión (§9) — el estado remoto permite recrear igual.
+`terraform destroy` al terminar la sesión (§10) — el estado remoto permite recrear igual.
 
 ---
 
@@ -18,7 +19,7 @@ winget install Amazon.AWSCLI
 winget install Microsoft.AzureCLI
 winget install Google.CloudSDK
 winget install jqlang.jq
-winget install Amazon.SessionManagerPlugin   # requerido por ECS Exec (evidencia RDS, §8)
+winget install Amazon.SessionManagerPlugin   # requerido por ECS Exec (evidencia RDS, §9)
 ```
 
 ## 1. Credenciales
@@ -60,6 +61,7 @@ cp infra/terraform/stacks/10-aws-empi/terraform.tfvars.lab.example infra/terrafo
 Edita `infra/terraform/stacks/10-aws-empi/terraform.tfvars`:
 - pega el `state_bucket` del paso 2 en `backend.hcl`
 - reemplaza `lab_role_arn` con tu `ACCOUNT_ID` (`arn:aws:iam::<ACCOUNT_ID>:role/LabRole`)
+- deja `otel_exporter_endpoint = ""` por ahora (§7 lo completa una vez exista `50-observability`)
 
 ```bash
 terraform -chdir=infra/terraform/stacks/10-aws-empi init -backend-config=backend.hcl
@@ -169,7 +171,69 @@ terraform -chdir=infra/terraform/stacks/40-xcloud-net apply
 
 ---
 
-## 7. Activar el golden path B2 (bus real + consumidores)
+## 7. Trazabilidad distribuida (`50-observability`)
+
+Jaeger + Grafana en Fargate, en la **misma VPC** que `10-aws-empi` (lee su estado remoto),
+para heredar sin trabajo adicional la conectividad cross-cloud que ya estableció
+`40-xcloud-net`. Por eso se despliega **después** de los pasos 3 y 6, no antes.
+
+```bash
+cp infra/terraform/stacks/50-observability/backend.hcl.example infra/terraform/stacks/50-observability/backend.hcl
+cp infra/terraform/stacks/50-observability/terraform.tfvars.example infra/terraform/stacks/50-observability/terraform.tfvars
+```
+
+Edita `infra/terraform/stacks/50-observability/terraform.tfvars`:
+
+```hcl
+state_bucket = "sanared-empi-tfstate-<ACCOUNT_ID>"   # el mismo bucket del paso 2
+create_iam_roles = false
+lab_role_arn      = "arn:aws:iam::<ACCOUNT_ID>:role/LabRole"
+grafana_admin_password = "TU-PASSWORD"   # no dejes el default en un despliegue real
+```
+
+```bash
+terraform -chdir=infra/terraform/stacks/50-observability init -backend-config=backend.hcl
+terraform -chdir=infra/terraform/stacks/50-observability apply
+```
+
+### 7.1 Conectar los exporters OTLP de las apps EMPI/HL7/GCP
+
+El endpoint OTLP no existe hasta que `50-observability` está desplegado — es el mismo
+patrón "aplica, toma el output, vuelve a aplicar" que el bus Kafka del §8.
+
+```bash
+terraform -chdir=infra/terraform/stacks/50-observability output -raw otlp_http_endpoint
+```
+
+Edita `infra/terraform/stacks/10-aws-empi/terraform.tfvars`,
+`infra/terraform/stacks/20-azure-integ/terraform.tfvars` y
+`infra/terraform/stacks/30-gcp-analytics/terraform.tfvars`, agregando:
+
+```hcl
+otel_exporter_endpoint = "<el otlp_http_endpoint del paso anterior>"
+```
+
+```bash
+terraform -chdir=infra/terraform/stacks/10-aws-empi apply
+terraform -chdir=infra/terraform/stacks/20-azure-integ apply
+terraform -chdir=infra/terraform/stacks/30-gcp-analytics apply
+
+# ECS no relee env vars solo: fuerza el redeploy en 10-aws-empi para que tome el endpoint nuevo
+aws ecs update-service --cluster sanared-empi-demo-cluster \
+  --service sanared-empi-demo-empi --force-new-deployment --region us-east-1
+```
+
+Deja `admin_cidrs = []` en `50-observability/terraform.tfvars` para autodetectar tu IP, o
+fíjala si vas a ver Grafana/Jaeger desde varias redes.
+
+```bash
+terraform -chdir=infra/terraform/stacks/50-observability output grafana_url
+terraform -chdir=infra/terraform/stacks/50-observability output jaeger_ui_url
+```
+
+---
+
+## 8. Activar el golden path B2 (bus real + consumidores)
 
 AWS Academy Learner Lab bloquea MSK Serverless; el bus real self-hosted (Redpanda,
 `use_self_hosted_kafka=true`) ya quedó activo desde el paso 3 — `kafka_auth_mode=plaintext`,
@@ -205,7 +269,7 @@ terraform -chdir=infra/terraform/stacks/20-azure-integ apply -var="hl7_consumer_
 
 ---
 
-## 8. Ejecutar el golden path B2 y recolectar evidencia
+## 9. Ejecutar el golden path B2 y recolectar evidencia
 
 ```bash
 bash entregables_hito3/07_Scripts_Modelo_Datos/demo/run_golden_path_b2.sh
@@ -219,14 +283,20 @@ Para probarlo manualmente (Postman): importa
 `entregables_hito3/07_Scripts_Modelo_Datos/demo/postman_collection.json` y corre las
 3 requests en orden.
 
+Las trazas del recorrido completo (API Gateway → ECS → Kafka → hl7-adapter/gcp-consumer)
+quedan en Jaeger/Grafana (§7.1) — útil para ver el cruce cross-cloud con latencias reales.
+
 ---
 
-## 9. Apagar todo
+## 10. Apagar todo
+
+`50-observability` lee la VPC de `10-aws-empi` (§7): destrúyelo **antes** que `10-aws-empi`.
 
 ```bash
 terraform -chdir=infra/terraform/stacks/40-xcloud-net destroy
 terraform -chdir=infra/terraform/stacks/30-gcp-analytics destroy
 terraform -chdir=infra/terraform/stacks/20-azure-integ destroy
+terraform -chdir=infra/terraform/stacks/50-observability destroy
 terraform -chdir=infra/terraform/stacks/10-aws-empi destroy
 ```
 

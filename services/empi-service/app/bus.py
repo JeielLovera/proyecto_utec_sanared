@@ -44,7 +44,15 @@ def build_envelope(event_type: str, empi_id: str, event_id: str, correlation_id:
             "retired_identifiers": payload.get("retired_identifiers", []),
         }
     else:
-        data = {"identifiers": payload.get("identifiers", [])}
+        # A pedido del proyecto: sin minimización -- va la identidad completa (name/
+        # birth_date/gender), no solo identifiers, para que los consumidores cross-cloud
+        # (gcp-consumer/patient_360) no dependan de un callback aparte al EMPI.
+        data = {
+            "identifiers": payload.get("identifiers", []),
+            "name": payload.get("name"),
+            "birth_date": payload.get("birth_date"),
+            "gender": payload.get("gender"),
+        }
     return {
         "event_id": str(event_id),
         "event_type": event_type,

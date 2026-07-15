@@ -46,6 +46,16 @@ resource "google_cloud_run_v2_service" "consumer" {
 
     containers {
       image = local.consumer_image
+
+      # El hilo de fondo (kafka_consumer.py) corre FUERA de una request HTTP; con el
+      # default de Cloud Run (CPU solo asignado durante requests) queda estrangulado y
+      # los handshakes TLS hacia bigquery.googleapis.com fallan de forma intermitente
+      # (SSLEOFError). min_instance_count=1 ya mantiene la instancia viva 24/7, así que
+      # cpu_idle=false no cambia el modelo de costo, solo evita el throttling.
+      resources {
+        cpu_idle = false
+      }
+
       env {
         name  = "GCP_PROJECT_ID"
         value = var.project_id
